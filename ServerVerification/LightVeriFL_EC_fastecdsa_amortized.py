@@ -4,6 +4,8 @@ import sys
 import time
 import random
 import math
+import debugpy
+INJECT_BASE_PORT = 5679
 
 from fastecdsa.curve import P256
 from fastecdsa.point import Point
@@ -70,8 +72,15 @@ if __name__ == "__main__":
 
     h_array = np.arange(1, N + 1)
 
-    if rank == 0:
-
+    if rank == 0: # is the federator
+        logging.info(f"Debugging port now waiting...")
+        
+        debugpy.listen(('localhost', INJECT_BASE_PORT))
+        debugpy.wait_for_client()
+        logging.info(f"Debug injected")
+        
+        
+        
         logging.info(f"N,U,T={N},{U},{T}, starts!! ")
         surviving_users_indexes = np.random.choice(np.arange(N), U, replace=False).astype(int)
         surviving_users_indexes_actual = random.sample(surviving_users_indexes.tolist(), T+1)
@@ -98,7 +107,7 @@ if __name__ == "__main__":
         for tx_rank in range(1, N + 1):
             comm.Send(Pedersen_coeff, dest=tx_rank)
 
-    elif rank <= N:
+    elif rank <= N: # clients
         surviving_users_indexes = np.zeros((U,), dtype=int)
         comm.Recv(surviving_users_indexes, source=0)
 
