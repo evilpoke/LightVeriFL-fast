@@ -19,7 +19,7 @@ from utils.EC import LightVeriFL_enc_EC, LightVeriFL_dec_EC, generate_hash, \
 
 from utils.EC import p_model
 
-comm = MPI.COMM_WORLD
+comm = MPI.COMM_WORLD   # initialize multi party
 rank = comm.Get_rank()
 size = comm.Get_size()
 
@@ -73,11 +73,11 @@ if __name__ == "__main__":
     h_array = np.arange(1, N + 1)
 
     if rank == 0: # is the federator
-        logging.info(f"Debugging port now waiting...")
+        #logging.info(f"Debugging RANK 0 port now waiting...")
         
-        debugpy.listen(('localhost', INJECT_BASE_PORT))
-        debugpy.wait_for_client()
-        logging.info(f"Debug injected")
+        #debugpy.listen(('localhost', INJECT_BASE_PORT))
+        #debugpy.wait_for_client()
+        #logging.info(f"Debug injected")
         
         
         
@@ -142,7 +142,7 @@ if __name__ == "__main__":
             print('----------------------------------')
             print('   Aggregation phase starts!!  ')
 
-            comm.Barrier()
+            comm.Barrier()  #1
             # 0.0. Receive the public keys
             t0 = time.time()
 
@@ -158,7 +158,7 @@ if __name__ == "__main__":
                 data = np.reshape(public_key_list, num_pk_per_user * N)
                 comm.Send(data, dest=i + 1)
 
-            comm.Barrier()
+            comm.Barrier()  #2
             t_AggRound0 = time.time() - t0
 
             '''
@@ -167,7 +167,8 @@ if __name__ == "__main__":
             # Round 1. Share Key
 
             # 1.0. Receive the SS from users
-            comm.Barrier()
+            comm.Barrier()   # 3 here: the client apparenlty overflows   
+            comm.Barrier() ###<<
             t1 = time.time()
 
             b_u_SS_list = np.empty((N, N), dtype='int64')
@@ -191,7 +192,8 @@ if __name__ == "__main__":
                 data = s_sk_SS_list[:, i].astype('int64')
                 comm.Send(data, dest=i + 1)
 
-            comm.Barrier()
+            comm.Barrier() #4
+            
 
             # before exchange h_SS
             # comm.Barrier()
@@ -428,17 +430,28 @@ if __name__ == "__main__":
         pickle.dump(time_out, open('./results/LightVeriFL_fast_amortized_N' + str(N) +'_U' + str(U) + '_d' + str(d) + '_L' + str(batch), 'wb'), -1)
 
     elif rank <= N:
+        
+        if rank==2:
+            logging.info(f"Debugging RANK N port now waiting...")
+            
+            debugpy.listen(('localhost', INJECT_BASE_PORT))
+            debugpy.wait_for_client()
+            logging.info(f"Debug injected")
+        else:
+            logging.info("Ignoring inject")
+        
         for i_trial in range(N_repeat):
-            # comm.Barrier()
+            #comm.Barrier()
             ##########################################
             ##           Users start HERE           ##
             ##########################################
+            
 
             '''
             Aggregation Round 0. AdvertiseKeys:
                 - this phase does not depend on the local model
             '''
-            comm.Barrier()
+            comm.Barrier()  #1
             t0 = time.time()
 
             # 0.0. Send my public keys
@@ -463,7 +476,7 @@ if __name__ == "__main__":
 
             # t_offline_comm = time.time() - t0_offline_comm
             # t_offline = time.time() - t0_offline
-            comm.Barrier()
+            comm.Barrier()  #2
 
             '''
             Aggregation Round 1. ShareMetadata:
@@ -476,19 +489,21 @@ if __name__ == "__main__":
                 - Generate hash (h_i)
                 - Generate & exchange commitment (c_i) 
             '''
-            comm.Barrier()
+            comm.Barrier()  #3
 
             # 1.0 Generate z and n_array
             z = generate_point_EC()  # z is a randomly selected point on EC
             n_array = []  # n_array comes from the EC
             for x in range(T):
                 n_array.append(generate_point_EC())
-
+            
+            comm.Barrier() ###<<
+            # comm.Barrier()
             # 1.1 LightVeriFL encoding to generate z_tilde's
-            z_tilde_array = LightVeriFL_enc_EC(z, n_array, alpha_s, beta_s, P256)
+            z_tilde_array = LightVeriFL_enc_EC(z, n_array, alpha_s, beta_s, P256)   # one client fucks up!
 
             # t_offline_enc = time.time() - t0_offline
-
+            
             # 1.2 Exchange z_tilde with all other users
 
             # t0_offline_comm = time.time()

@@ -218,6 +218,14 @@ def evaluate_hash(aggregate_hash, client_hashes):
 
 def LightVeriFL_enc_EC(hash, n_array, evalpoints_in, evalpoints_out, curve):
     '''
+    
+    
+        TODO: evalpoints_in == ????? is this just for converting to elliptic curves? 
+        
+    This creates tilde-z from z and an array of n
+    
+    The input "hash" is z in here
+    
     input
         - hash : tuple of (x,y)
         - n : size T array (T: privacy parameter) where each element is tuple of (x, y)
@@ -230,14 +238,23 @@ def LightVeriFL_enc_EC(hash, n_array, evalpoints_in, evalpoints_out, curve):
         - output : size N array which correponds to encoded hash
     '''
 
-    W_enc = gen_Lagrange_coeffs(evalpoints_in, evalpoints_out, curve.q)
+    W_enc = gen_Lagrange_coeffs(evalpoints_in, evalpoints_out, curve.q)  # K is expanded to N: 
+    # W_enc now is KxN
+    # 
+    #   with K = |evalpoints_in|
+    #        N = |evalpoints_out|
+    #
 
     output = [(0, 0)] * len(evalpoints_out)
 
     for i in range(len(output)):
         output[i] = W_enc[i][0] * hash
+        
+        # really just matrix multiplication    
         for j in range(len(n_array)):
             output[i] = output[i] + (W_enc[i][j + 1] * n_array[j])
+    
+    
     return output
 
 

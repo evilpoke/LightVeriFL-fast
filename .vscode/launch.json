@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Attach to MPI Rank 1",
+            "type": "debugpy",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5679   // Port for Rank 1 (5678 + 1)
+            },
+            "justMyCode": false  // Set to true to only debug your own code
+        }
+    ]
+}

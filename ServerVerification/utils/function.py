@@ -82,6 +82,75 @@ def my_q_inv(X_q, q_bit, p):
     return X_q.astype(float) / (2 ** q_bit)
 
 
+def gen_Lagrange_coeff_own(evalpoints_in, evalpoints_out):
+    
+
+def modinv(a, p):
+    """Modular inverse via Fermat's little theorem (p must be prime)."""
+    return pow(int(a), p - 2, p)
+
+
+def gen_Lagrange_coeffs_fixed(evalpoints_in, evalpoints_out, p, is_K1=0):
+    """
+    Some claude BS !!!! 
+    
+    Compute Lagrange interpolation matrix U of shape (N, K) over F_p.
+
+    U[i][j] = L_j(alpha_i) = product_{k != j} (alpha_i - beta_k)
+                                              / (beta_j - beta_k)  mod p
+
+    Parameters
+    ----------
+    evalpoints_in  : list of K ints  (beta_0, ..., beta_{K-1})
+        Source evaluation points (where the polynomial is "defined").
+    evalpoints_out : list of N ints  (alpha_0, ..., alpha_{N-1})
+        Target evaluation points (where we want to evaluate).
+    p : int
+        Prime field modulus. Must be > max(evalpoints_in + evalpoints_out).
+
+    Returns
+    -------
+    U : list[list[int]]  shape (N, K), all entries in [0, p)
+    """
+    K = len(evalpoints_in)
+    N = len(evalpoints_out)
+
+    # Precompute denominator weights w[j] = prod_{k != j} (beta_j - beta_k) mod p
+    w = []
+    for j in range(K):
+        beta_j = int(evalpoints_in[j]) % p
+        denom = 1
+        for k in range(K):
+            if k == j:
+                continue
+            beta_k = int(evalpoints_in[k]) % p
+            denom = denom * ((beta_j - beta_k) % p) % p
+        w.append(denom)
+
+    # Precompute nodal polynomial l[i] = prod_{k=0}^{K-1} (alpha_i - beta_k) mod p
+    l = []
+    for i in range(N):
+        alpha_i = int(evalpoints_out[i]) % p
+        val = 1
+        for k in range(K):
+            beta_k = int(evalpoints_in[k]) % p
+            val = val * ((alpha_i - beta_k) % p) % p
+        l.append(val)
+
+    # U[i][j] = l[i] / ((alpha_i - beta_j) * w[j])  mod p
+    U = [[0] * K for _ in range(N)]
+    for i in range(N):
+        alpha_i = int(evalpoints_out[i]) % p
+        for j in range(K):
+            beta_j = int(evalpoints_in[j]) % p
+            # full denominator = (alpha_i - beta_j) * w[j]  mod p
+            full_den = (alpha_i - beta_j) % p * w[j] % p
+            U[i][j] = l[i] * modinv(full_den, p) % p
+    
+    return U
+    
+    
+
 def gen_Lagrange_coeffs(evalpoints_in, evalpoints_out, p, is_K1=0):
     '''
     input
@@ -93,6 +162,7 @@ def gen_Lagrange_coeffs(evalpoints_in, evalpoints_out, p, is_K1=0):
     output
         - U : matrix of lagrange coefficients (K x N)
     '''
+    print("DEBUG: evals = "+str(evalpoints_in)+"")
     rows, cols = (len(evalpoints_out), len(evalpoints_in))
     U = [[[] for i in range(cols)] for i in range(rows)]  # [[0] * cols] * rows
     # U = np.zeros((len(evalpoints_out), len(evalpoints_in)), dtype='int64')
@@ -111,7 +181,10 @@ def gen_Lagrange_coeffs(evalpoints_in, evalpoints_out, p, is_K1=0):
     for j in range(len(evalpoints_in)):
         for i in range(len(evalpoints_out)):
             den = np.mod(np.mod(evalpoints_out[i] - evalpoints_in[j], p) * w[j], p)
-            U[i][j] = divmod(l[i], den, p)
+            try:
+                U[i][j] = divmod(l[i], den, p)
+            except Exception as e:
+                print("DEBUG: l[i] = "+str(l[i])+" den="+str(den)+" p="+str(p))
     return U  # U.astype('int64')
 
 
