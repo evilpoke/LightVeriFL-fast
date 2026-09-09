@@ -6,9 +6,11 @@ import random
 import math
 import debugpy
 INJECT_BASE_PORT = 5679
-
+from fastecdsa import curvemath
 from fastecdsa.curve import P256
 from fastecdsa.point import Point
+
+print("IMPORTED")
 
 import numpy as np
 from mpi4py import MPI
@@ -67,8 +69,8 @@ if __name__ == "__main__":
     drop_info = np.zeros((N,), dtype=int)
 
     T = int(np.floor(N / 2)) #U = int(0.9*N)
-    alpha_s = np.array(range(T+1))  # np.arange(0, U)  # T+1 evaluation points for encoding inputs
-    beta_s = np.arange(U, U + N)  # N evaluation points for decoding outputs
+    alpha_s = list(range(T + 1))  #np.array(range(T+1))  # np.arange(0, U)  # T+1 evaluation points for encoding inputs
+    beta_s = list(range(U, U + N)) #np.arange(U, U + N)  # N evaluation points for decoding outputs
 
     h_array = np.arange(1, N + 1)
 
@@ -110,10 +112,11 @@ if __name__ == "__main__":
     elif rank <= N: # clients
         surviving_users_indexes = np.zeros((U,), dtype=int)
         comm.Recv(surviving_users_indexes, source=0)
+        # so apparently there is surviving users U and there is "actual" surviving users, which is a subset of U
 
         surviving_users_indexes_actual = np.zeros((T+1,), dtype=int)
         comm.Recv(surviving_users_indexes_actual, source=0)
-
+        
         alpha = np.zeros((d,), dtype=int)
         comm.Recv(alpha, source=0)
 
@@ -171,8 +174,8 @@ if __name__ == "__main__":
             comm.Barrier() ###<<
             t1 = time.time()
 
-            b_u_SS_list = np.empty((N, N), dtype='int64')
-            s_sk_SS_list = np.empty((N, N), dtype='int64')
+            b_u_SS_list = np.empty((N, N), dtype='int64')   # artifically encrypted
+            s_sk_SS_list = np.empty((N, N), dtype='int64')  # artifically encrypted
 
             for i in range(N):
                 data = np.empty(N, dtype='int64')
@@ -184,7 +187,7 @@ if __name__ == "__main__":
                 s_sk_SS_list[i, :] = data
 
             # 1.1. Send the SS to the users
-
+            
             for i in range(N):
                 data = b_u_SS_list[:, i].astype('int64')
                 comm.Send(data, dest=i + 1)
@@ -216,7 +219,7 @@ if __name__ == "__main__":
             array_idx2 = 0
             for i in U1:
                 rx_rank = i + 1
-                masked_grad_array[array_idx2] = comm.recv(source=rx_rank)
+                masked_grad_array[array_idx2] = comm.recv(source=rx_rank)  # ?? so line 23? or l.13 
                 array_idx2 += 1
 
             agg_grad = [sum(x) % p_model for x in zip(*masked_grad_array)]
@@ -324,7 +327,8 @@ if __name__ == "__main__":
 
             # 0.0. Receive z_tilde_mul from surviving users: one for surviving and another for dropped
 
-            # 0.0.0. z_tilde_mul for surviving
+            # ------------------------------
+            # 0.0.0. z_tilde_mul for surviving (so line 32 where N=U and N=D)
             # comm.Barrier()
             z_tilde_mul_array_surviving = [0] * len(surviving_users_indexes_actual)  #len(surviving_users_indexes)
             array_idx = 0
@@ -341,23 +345,24 @@ if __name__ == "__main__":
                 rx_rank = i + 1
                 z_tilde_mul_array_dropped[array_idx] = comm.recv(source=rx_rank)
                 array_idx += 1
+            # --------------------------------
 
             # 0.1. Decoding - z_mul
             # Decode the aggregate dropped users' hashes and aggregate surviving users' hashes separately
 
-            # 0.1.0. Decode the aggregate surviving users' hash and mask
+            # 0.1.0. Decode the aggregate surviving users' hash and mask  (so line 36 for N=U and N=D)  
             dec_z = LightVeriFL_dec_EC(z_tilde_mul_array_surviving, alpha_s, beta_s[surviving_users_indexes_actual], P256)
             dec_z_minus = (-1 * dec_z)
             res_surviving = (hz_mul_surviving + dec_z_minus)
             noise_surviving = (noise_mul_surviving + dec_z_minus)
             # print(f"multiplication of surviving users' hashes = {res_surviving}\n")
 
-            # 0.1.1. Decode the aggregate dropped users' hash and mask
-            dec_z = LightVeriFL_dec_EC(z_tilde_mul_array_dropped, alpha_s, beta_s[surviving_users_indexes_actual], P256)
+            # 0.1.1. Decode the aggregate dropped users' hash and mask   (N=D)
+            dec_z = LightVeriFL_dec_EC(z_tilde_mul_array_dropped, alpha_s, beta_s[surviving_users_indexes_actual], P256)  # sum_i\in N z_i
             dec_z_minus = (-1 * dec_z)
             res_dropped = (hz_mul_dropped + dec_z_minus)
             noise_dropped = (noise_mul_dropped + dec_z_minus)
-
+            
             # print(f"multiplication of dropped users' hashes = {res_dropped}\n")
 
             # 0.1.2. Combine the two to reconstruct the aggregate user hash and mask
@@ -457,7 +462,7 @@ if __name__ == "__main__":
             # 0.0. Send my public keys
             my_sk = np.random.randint(0, p_model, size=(2)).astype('int64')
             my_pk = my_pk_gen(my_sk, p_model, 0)
-
+            
             my_key = np.concatenate((my_pk, my_sk))
             # print(f"my_key = {my_key}")
 
@@ -497,11 +502,11 @@ if __name__ == "__main__":
             for x in range(T):
                 n_array.append(generate_point_EC())
             
-            comm.Barrier() ###<<
+            comm.Barrier() ### <<
             # comm.Barrier()
             # 1.1 LightVeriFL encoding to generate z_tilde's
-            z_tilde_array = LightVeriFL_enc_EC(z, n_array, alpha_s, beta_s, P256)   # one client fucks up!
-
+            z_tilde_array = LightVeriFL_enc_EC(z, n_array, alpha_s, beta_s, P256)   
+            
             # t_offline_enc = time.time() - t0_offline
             
             # 1.2 Exchange z_tilde with all other users
@@ -573,6 +578,8 @@ if __name__ == "__main__":
 
             # 1.4 Local model training
 
+            
+
             # generate gradient randomly for now. These will come from the training
             x_i = [rank] * d
 
@@ -613,7 +620,7 @@ if __name__ == "__main__":
                 array_idx3 += 1
 
             comm.Barrier()
-
+            
             # t_hash_gen = time.time() - t0_hash_gen
 
             '''
@@ -632,7 +639,7 @@ if __name__ == "__main__":
             # comm.Barrier()
             # if rank in U1 + 1:  # same as above
             #     comm.send(x_i, dest=0)
-
+            
             y_i = [0] * d
             for i in range(d):
                 y_i[i] = int(x_i[i] + mask[i] % p_model)
@@ -648,7 +655,7 @@ if __name__ == "__main__":
             comm.send(hz, dest=0)  # masked user hash
 
             # comm.Barrier()
-            comm.send(Pedersen_noise_z, dest=0)  # masked user noise
+            comm.send(Pedersen_noise_z, dest=0)  # masked user noise  = \tilde r ?!
 
             comm.Barrier()
 
@@ -691,6 +698,8 @@ if __name__ == "__main__":
             '''
             comm.Barrier()
 
+            # so apparently there is surviving users U and there is "actual" surviving users, which is a subset of U
+
             # 0.0.0. Send z_tilde_mul for surviving users
             # comm.Barrier()
             if rank in surviving_users_indexes_actual + 1: #surviving_users_indexes + 1:
@@ -709,7 +718,7 @@ if __name__ == "__main__":
 
             if rank in surviving_users_indexes + 1:
                 t0_verification = time.time()
-
+                
                 # 0.1.0. Receive the aggregate hash from the server
                 result = [0]
                 result = comm.recv(source=0)

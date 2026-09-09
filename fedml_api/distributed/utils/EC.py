@@ -6,14 +6,16 @@ import hashlib
 import random
 import binascii
 import time
+from fedml_api.distributed.lightveriagg.utils import PI, gen_Lagrange_coeffs
+from fedml_api.distributed.utils.function import matmul_mod
 import numpy as np
 import math
 
 from fastecdsa.curve import P256
 from fastecdsa.point import Point
 
-from .function import gen_Lagrange_coeffs, PI, divmod
-from .function import matmul_mod
+#from .function import gen_Lagrange_coeffs, PI, divmod
+#from .function import matmul_mod
 
 
 # Elliptic curve initilization. We use NIST P-256 curve. Can use different curves as well.
