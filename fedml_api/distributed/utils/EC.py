@@ -1,18 +1,31 @@
 # Implements a discrete logarithm based hash using Elliptic Curves (EC) on NIST P-256/
 # EC crytopgrahy implementation from https://asecuritysite.com/encryption/ecdh3
-
+import itertools
 import collections
 import hashlib
 import random
 import binascii
 import time
-from fedml_api.distributed.lightveriagg.utils import PI, gen_Lagrange_coeffs
-from fedml_api.distributed.utils.function import matmul_mod
+#from fedml_api.distributed.lightveriagg.utils import gen_Lagrange_coeffs
+#from fedml_api.distributed.utils.function import matmul_mod
+from fedml_api.distributed.lightveriagg.utils import transform_tensor_to_finite
 import numpy as np
 import math
 
 from fastecdsa.curve import P256
+#from fastecdsa.curve import brainlabcurve
 from fastecdsa.point import Point
+from tqdm import tqdm
+
+
+def PI(vals, p):  # upper-case PI -- product of inputs
+    accum = 1
+    for v in vals:
+        tmp = np.mod(v, p)
+        accum = np.mod(accum * tmp, p)
+    return accum
+
+
 
 #from .function import gen_Lagrange_coeffs, PI, divmod
 #from .function import matmul_mod
@@ -33,17 +46,25 @@ from fastecdsa.point import Point
 #    h=1,
 #)
 
+
+curve_g = Point(P256.gx, P256.gy, curve=P256) #S
+curve_n = P256.q  # 115792089210356248762697446949407573529996955224135760342422259061068512044369
+curve_p = P256.p
 p_model = 2 ** 31 - 1  # field size for model
+#p_model = curve_n  # field size for model
+system_n = curve_n
+
 
 #xs = 0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296 #0xde2444bebc8d36e682edd27e0f271508617519b3221a8fa0b77cab3989da97c9
 #ys = 0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5 #0xc093ae7ff36e5380fc01a5aad1e66659702de80f53cec576b6350b243042a256
 
-curve_g = Point(P256.gx, P256.gy, curve=P256) #S
-curve_n = P256.q  # 115792089210356248762697446949407573529996955224135760342422259061068512044369
 # p_model = 2 ** 16 - 15 # field size for model
 # p_model = 2 ** 10 - 3 # field size for model
 
-'''
+
+
+
+
 
 # Modular arithmetic ##########################################################
 
@@ -91,7 +112,9 @@ def is_on_curve(point):
     x, y = point
 
     return (y * y - x * x * x - curve.a * x - curve.b) % curve.p == 0
-'''
+
+
+
 
 '''
 
@@ -177,10 +200,14 @@ def scalar_mult(k, point):
     return result
 '''
 
+
+
 # Base point curve.g
 # We find d distinct points using curve.g as generator
 # Alpha_i needs to be distinct so that each g_i = g ** alpha_i is distinct
 # We set alpha_i below
+
+
 def distinct_point_compute(alpha):
     d = len(alpha)
     distinct_bases = tuple(alpha[i] * curve_g for i in range(d))
@@ -313,6 +340,87 @@ def PI_addEC(vals):  # upper-case PI -- addition of inputs on EC
     return accum
 
 
+def add_single_field_element(firstelement, secondelement, prime):
+    """
+    Performs the adding of two field elements in F_p
+
+    """
+    firstelement = firstelement + secondelement
+    #return firstelement# np.mod(firstelement, prime)
+    return firstelement % prime #np.mod(firstelement, prime)
+    
+
+def add_field_elements(listoffieldelements, prime):
+    """
+    listoffieldelements: List of elements of field F_p
+    prime: prime p of field F_p
+    """
+    #print(len(listoffieldelements))
+    #exit(1)
+    
+    currentelement = listoffieldelements[0]
+    for idx, element in enumerate(listoffieldelements[1:]):
+        currentelement = add_single_field_element(element, currentelement, prime)
+        #print(idx)
+
+    return currentelement
+
+
+
+def different_generators():
+    v = np.array([2,6], dtype=int)  # TODO: nothing up my sleeve
+    distinct_bases = distinct_point_compute(v)
+    return distinct_bases
+
+def compute_elgamal_commitment_to_hash_randomness(hash, randomness):
+    # hash is a group element
+    # randomness is a field / scalar element
+    # returns the tuple (c1, c2)
+    
+    #alpha = np.ones((1,), dtype=int)
+
+    distinct_base = different_generators()
+    #print(type(  randomness * distinct_base[0]))
+    #exit(1)
+
+    
+    g_powof_r = randomness * distinct_base[0]
+    h_powof_r = randomness * distinct_base[1]
+    if isinstance(g_powof_r, np.ndarray):
+        g_powof_r = g_powof_r[0]
+    c1 = g_powof_r 
+
+    if isinstance(h_powof_r, np.ndarray):
+        h_powof_r = h_powof_r[0]
+
+    M_with_hash = [hash, h_powof_r]   #[0]]
+    #print(hash)
+    #print(h_powof_r)
+    c2 = PI_addEC(M_with_hash)
+
+    return (c1, c2)
+    
+
+def aggregate_el_gamal_commitments(commitments):
+    """
+    commitment: List[Tuple[c1,c2]]
+    
+    """
+    all_c1s = [commit[0] for commit in commitments]
+    all_c2s = [commit[1] for commit in commitments]
+
+    masterc1 = PI_addEC(all_c1s)
+    masterc2 = PI_addEC(all_c2s)
+
+    return (masterc1,masterc2)
+
+
+"""def PI_MultiplyEC(vals):
+    accnum = Point(1,1, curve=None)
+    for v in vales:
+        temp = Point(v.x, v.y, curve= )"""
+
+
 def gen_BGW_lambda_s_EC(alpha_s, curve):
     lambda_s = [0] * len(alpha_s)
 
@@ -398,14 +506,176 @@ def partition_digits(input_number, parts):
     return output_x, output_y
 
 
-# concatenates a given list elements into a single number
 def concatenate_digits(input_number):
     my_lst_str = ''.join(map(str, input_number))
     return int(my_lst_str)
 
 
+def hash_a_sample_gradient(total_dimension, gradient):
+    
+    alpha = np.ones((total_dimension,), dtype=int)
+
+    distinct_bases = distinct_point_compute(alpha)
+
+    # compute g_i ** gradient[i] for a client
+    temp_hash = tuple(gradient[i] * distinct_bases[i] for i in range(total_dimension))
+    # compute the product for [d]. This product translates into addition on the elliptic curve
+    hash_client = temp_hash[0]
+    for i in range(1, total_dimension):
+        hash_client = hash_client + temp_hash[i]
+
+    return hash_client
+
+
+def test2():
+    #setss = [
+    #    []
+
+    #]
+    #for (var1,var2,var3,var4,var5,var5) in tuple(itertools.product(*setss))
+    var1 = p_model
+    var2 = p_model
+    var3 = p_model
+    var4 = p_model
+    var5 = p_model
+
+    
+    # el gamal thingy
+
+    p = p_model
+    #p = P256.p
+    #p = 2 ** 31 - 1     # default as by init script
+    total_dimension = 44
+    q_bits = 10         # default as by init script
+
+    gradients = []
+    hashes = []
+    randomnesses = []
+    commitments = []
+    masked_hashes = []
+    masked_randomnesses = []
+    zi_for_hashes = []
+    zi_for_randomnesses = []
+
+    for i in tqdm(range(50)): # 10 virtual clients
+        
+        weights = np.random.randint(var1, size=(total_dimension, 1))
+        weights = {'something': weights}
+        randomness = randomness = random.randrange(0, system_n) # np.random.randint(p, size=(1))
+        
+        gradient = transform_tensor_to_finite(weights, var2, q_bits)
+        hash = hash_a_sample_gradient(total_dimension, gradient["something"])[0]
+        #print(hash)
+        
+        hashes.append(hash)
+
+        zi_for_hash = generate_point_EC()
+        """        print("...")
+        print(zi_for_hash)
+        print(hash)"""
+
+        maskedhash = zi_for_hash + hash
+
+        zi_for_randomnes = random.randrange(0, system_n) #(system_n, size=(1))
+        masked_randomnes = add_field_elements([randomness, zi_for_randomnes], system_n)  # addition under mod 
+        
+        gradients.append(gradient["something"])
+        randomnesses.append(randomness)
+
+        commit = compute_elgamal_commitment_to_hash_randomness(hash, randomness)
+
+        commitments.append(commit)
+
+        masked_hashes.append(maskedhash)
+        masked_randomnesses.append(masked_randomnes)
+        zi_for_randomnesses.append(zi_for_randomnes)
+        zi_for_hashes.append(zi_for_hash)
+
+    # aggregate the masks
+    aggregated_mask_for_hashes = PI_addEC(zi_for_hashes)
+    aggregated_mask_for_randomness = add_field_elements(zi_for_randomnesses, system_n)
+    
+    # aggregate the hashes
+    aggregated_masked_hashed = PI_addEC(masked_hashes)
+
+    # aggregate the randomness
+    aggregated_masked_randomness = add_field_elements(masked_randomnesses, system_n)
+
+    # demask the thingies
+    #demasked_aggregated_randomness = aggregated_masked_randomness - aggregated_mask_for_randomness  #np.mod( aggregated_masked_randomness - aggregated_mask_for_randomness, p) 
+    demasked_aggregated_randomness = ( aggregated_masked_randomness - aggregated_mask_for_randomness) % system_n #, p) 
+    
+    demasked_aggregated_hashes = aggregated_masked_hashed + (-1* aggregated_mask_for_hashes)  # 
+
+    # aggregate the commits
+    aggregated_commitments_throughopenings = compute_elgamal_commitment_to_hash_randomness(demasked_aggregated_hashes, demasked_aggregated_randomness)
+
+    # aggregate the gradients
+    agg = gradients[0]
+    for grad in gradients[1:]:
+        agg = agg + grad
+        #agg = np.mod(agg, var4)# % p #)
+
+    assert demasked_aggregated_hashes == PI_addEC(hashes), "err"
+    assert demasked_aggregated_randomness == add_field_elements(randomnesses, system_n) , "err"
+
+    assert hash_a_sample_gradient(total_dimension,agg ) == PI_addEC(hashes) , "err"
+    aggregated_commitments_throughcommitagg = aggregate_el_gamal_commitments(commitments)
+
+    assert aggregated_commitments_throughcommitagg == aggregated_commitments_throughopenings, "test"
+
+
+    ##################################
+
+
+    distinct_base = different_generators()
+    #print(type(  randomness * distinct_base[0]))
+    #exit(1)
+
+    h1 = generate_point_EC()
+    h2 = generate_point_EC()
+    r1 = random.randrange(0, system_n)
+    r2 = random.randrange(0, system_n)
+
+    c1 = compute_elgamal_commitment_to_hash_randomness(h1, r1)
+    c2 = compute_elgamal_commitment_to_hash_randomness(h2, r2)
+    cc = aggregate_el_gamal_commitments([c1,c2])
+    
+    #print(cc)
+    print("-------")
+
+    hsum = PI_addEC([h1,h2])
+    rsum = (r1+r2) % system_n #np.mod(r1+r2, p)
+    csum = compute_elgamal_commitment_to_hash_randomness(hsum, rsum)
+    
+    #print(csum)
+
+    assert csum == cc, "err"
+
+    c2p = ()
+
+
+    ################################
+
+
+    #print(type(aggregated_commitments_throughopenings))
+
+    #print(type(aggregated_commitments_throughcommitagg))
+
+    #print(aggregated_commitments_throughopenings)
+    #print(aggregated_commitments_throughcommitagg)
+
+    
+
+
+
+
 if __name__ == "__main__":
-    print("==========================")
+    print("=======Test 1===================")
+
+    test2()
+
+    print("=======Test 2===================")
     print("  Test of MDS codes on EC \n ")
 
     # Let's check how it works.
@@ -455,3 +725,4 @@ if __name__ == "__main__":
 
     print("\n  Test of MDS codes on EC ends. ")
     print("==========================")
+

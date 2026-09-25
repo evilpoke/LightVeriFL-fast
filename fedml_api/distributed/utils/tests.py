@@ -40,7 +40,7 @@ def compute_elgamal_commitment_to_hash_randomness(hash, randomness):
 
     distinct_base = different_generators()
 
-    
+
     g_powof_r = randomness * distinct_base[0]
     h_powof_r = randomness * distinct_base[1]
     c1 = g_powof_r

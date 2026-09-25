@@ -1,11 +1,12 @@
 import logging
+import os
 import pickle
 from time import sleep
 
 from fedml_core.distributed.communication.message import Message
 from fedml_core.distributed.server.server_manager import ServerManager
 from .message_define import MyMessage
-from .utils import transform_tensor_to_list
+from .utils import save_model_dict_to_pickle, transform_tensor_to_list
 import time
 
 class LightVeriAggServerManager(ServerManager):
@@ -29,6 +30,8 @@ class LightVeriAggServerManager(ServerManager):
         self.preprocessed_client_lists = preprocessed_client_lists
         self.timing_measurements = dict()
 
+        self.global_model_params = None
+        self.modelpath = None
         self.active_clients_first_round = []
         self.active_clients_second_round = []
 
@@ -44,7 +47,9 @@ class LightVeriAggServerManager(ServerManager):
         self.client_num_in_total = self.size
         for i in range(self.client_num_in_total):
             self.encoded_veri_mask_dict[i] = dict()
-            
+
+    def set_path(self, basepath):
+        self.modelpath = os.path.join(basepath, "_client_"+str(self.rank) + "save.pkl")
 
     def run(self):
         super().run()
@@ -227,7 +232,7 @@ class LightVeriAggServerManager(ServerManager):
             aggregate_randomness_D = masked_rnd_D - aggregate_veri_mask_D
             t1 = time.time()
             self.timing_measurements["handle_message_receive_veri_aggregate_mask: demasking sum: h_i and sum: r_i"] = t1-t0
-
+            
             t0 = time.time()
             for receiver_id in range(1, self.size):
                 self.send_message_sync_veriagg_to_client(
@@ -247,6 +252,9 @@ class LightVeriAggServerManager(ServerManager):
                 logging.info("==============================\n SERVER: TRAINING IS FINISHED! \n The final model update has occurred and the final verification aggregate mask was sent.")
                 sleep(3)
                 self.finish()
+                
+                save_model_dict_to_pickle(self.modelpath, self.global_model_params)
+            
 
 
     def handle_message_receive_aggregate_encoded_mask_from_client(self, msg_params):  # sum
@@ -309,7 +317,7 @@ class LightVeriAggServerManager(ServerManager):
             t1 = time.time()
             self.timing_measurements["handle_message_receive_aggregate_encoded_mask_from_client: artificial sampling"] = t1-t0
 
-
+            self.global_model_params = global_model_params
             t0 = time.time()
             for receiver_id in range(1, self.size):
                 self.send_message_sync_model_to_client(

@@ -40,7 +40,7 @@ class LightVeriAggClientManager(ClientManager):
         self.encoded_veri_mask_dict = {}
 
         # verification
-        self.alpha = np.zeros((1,), dtype=int)
+        self.alpha = np.zeros((1,), dtype=int)  # TODO: this can only be wrong
         self.agg_client_hashes_epochs = [0]*self.num_rounds
         self.N = self.size - 1
         self.stored_model = None
@@ -308,7 +308,7 @@ class LightVeriAggClientManager(ClientManager):
             t0 = time.time()
             h_agg = generate_hash(self.locally_accumulated_model)
             #h_agg = generate_hash([sum(x) for x in zip(*server_agg_gradient_epochs)], alpha, d)
-
+            
             
             h_blindly_added = PI_addEC(self.agg_client_hashes_epochs_complete)
 

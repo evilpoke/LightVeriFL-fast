@@ -234,7 +234,7 @@ if __name__ == "__main__":
                 rx_rank = i + 1
                 hz_array[array_idx] = comm.recv(source=rx_rank)
                 array_idx += 1
-
+            
             # comm.Barrier()
             noise_array = [0] * N
             array_idx2 = 0
@@ -356,7 +356,7 @@ if __name__ == "__main__":
             res_surviving = (hz_mul_surviving + dec_z_minus)
             noise_surviving = (noise_mul_surviving + dec_z_minus)
             # print(f"multiplication of surviving users' hashes = {res_surviving}\n")
-
+            
             # 0.1.1. Decode the aggregate dropped users' hash and mask   (N=D)
             dec_z = LightVeriFL_dec_EC(z_tilde_mul_array_dropped, alpha_s, beta_s[surviving_users_indexes_actual], P256)  # sum_i\in N z_i
             dec_z_minus = (-1 * dec_z)
@@ -582,7 +582,7 @@ if __name__ == "__main__":
 
             # generate gradient randomly for now. These will come from the training
             x_i = [rank] * d
-
+            
             # 1.5 Generate hash (h_i) and and mask hash with another point on the EC
             # t0_hash_gen = time.time()
 

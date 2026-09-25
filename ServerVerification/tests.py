@@ -45,7 +45,7 @@ def test_whole_01():
         for artificial_target in range(N):
             tx_data = internal_z_tilde_array[sender]
             send_to_artifical_target[artificial_target].append(tx_data[artificial_target])
-
+    
     # we are now to only select these survivings:
     #1:1+14
 

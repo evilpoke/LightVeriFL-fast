@@ -49,3 +49,11 @@ I now want to test gen_Lagrange_coeffs, in particular: I would really like to kn
 Hence: I now to back to LightSecAgg, because here the code does not work.
 
 Update from LightSecAgg. I now know how it's gen_lagrange_coeffs works and apparently gen_lagrange_coeffs is called similarly. Their codebase has huge problems with correct setup. I would like to use FedML anyway to do actual learning stuff, sooo....
+
+I now integrated the stuff from LightSegAgg into here (so the FedML codebase)
+Right now i get:
+
+ValueError: cannot reshape array of size 13083 into shape (5,2616)
+
+
+

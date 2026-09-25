@@ -1,9 +1,16 @@
 import logging
 import os
 import copy
-
+import pickle
 import numpy as np
 import torch
+
+
+def save_model_dict_to_pickle(path, weights):
+    pickle.dump(path, weights)
+
+def load_model_dict_from_pickle(path):
+    return pickle.load(path)
 
 
 def model_dimension(weights):
