@@ -55,5 +55,24 @@ Right now i get:
 
 ValueError: cannot reshape array of size 13083 into shape (5,2616)
 
+End September:
 
+- I am now testing the lightverifl code now finally and it the gen_Lagrange_coeffs does not work??
+  - searching now if i have already sucessfully started the stuff
+  - i found stuff in the ServerVerification folder
+  - we use different methods in the ServerVerification.. ffs
+  - works now
 
+Theoretical "problem" with the el gamal hash
+
+- i would need to rebuild the encode() from LightSecAgg to also work with arbitrary large numbers as the randomness would need to naively be pooled from curve_n to ensure uniform distribution when summing a lot of these randomnesses together (which happens)
+- i now had the idea that we cap all the randomness at a smaller mod
+  - no, this will mathematically not work
+- I now try to find an encoding into a v-large array of int elements that is additively homomorphic
+  - prob. difficult (rawads secret sharing??)
+- Alternatively i will have to rewrite the encode method 
+  - is this really good code then?
+- Fuck it for now. The code (at least the tests) work, it is just not secure. I have the following actions
+  - fix it last minute
+  - mention it in the thesis / or not
+  - "fix" it in a future work

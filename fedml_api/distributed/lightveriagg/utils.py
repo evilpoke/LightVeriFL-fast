@@ -2,6 +2,7 @@ import logging
 import os
 import copy
 import pickle
+import random
 import numpy as np
 import torch
 
@@ -125,8 +126,80 @@ def LCC_decoding_with_points(f_eval, eval_points, target_points, p):
 
     return f_recon
 
+def gen_Lagrange_coeffs_lightsecagg(alpha_s, beta_s, p, is_K1=0):
+    """
+    Yet another gen_lagrange_coeff implementation
+    """
+    if is_K1 == 1:
+        num_alpha = 1
+    else:
+        num_alpha = len(alpha_s)
+    U = np.zeros((num_alpha, len(beta_s)), dtype="int64")
 
-def gen_Lagrange_coeffs(alpha_s, beta_s, p, is_K1=0):
+    w = np.zeros((len(beta_s)), dtype="int64")
+    for j in range(len(beta_s)):
+        cur_beta = beta_s[j]
+        den = PI([cur_beta - o for o in beta_s if cur_beta != o], p)
+        w[j] = den
+
+    l = np.zeros((num_alpha), dtype="int64")
+    for i in range(num_alpha):
+        l[i] = PI([alpha_s[i] - o for o in beta_s], p)
+
+    for j in range(len(beta_s)):
+        for i in range(num_alpha):
+            den = np.mod(np.mod(alpha_s[i] - beta_s[j], p) * w[j], p)
+            U[i][j] = divmod(l[i], den, p)
+    return U.astype("int64")
+
+
+def gen_Lagrange_coeffs(evalpoints_in, evalpoints_out, p, is_K1=0):
+    '''
+    LIGHTVERIFL implementation
+    input
+        - evalpoints_in  : array of evaluation points corresponding to encoding inputs (K)
+        - evalpoints_out : array of evaluation points corresponding to encoding outputs (N)
+        - p : finite field size
+        - is_K1 : True when K=1
+
+    output
+        - U : matrix of lagrange coefficients (K x N)
+    '''
+    #print("DEBUG: evals = "+str(evalpoints_in)+"")
+    rows, cols = (len(evalpoints_out), len(evalpoints_in))
+    U = [[[] for i in range(cols)] for i in range(rows)]  # [[0] * cols] * rows
+    # U = np.zeros((len(evalpoints_out), len(evalpoints_in)), dtype='int64')
+
+    w = []  # np.zeros((len(evalpoints_in)), dtype='int64')
+    for j in range(len(evalpoints_in)):
+        cur_beta = evalpoints_in[j]
+        #try:
+        den = PI([cur_beta - o for o in evalpoints_in if cur_beta != o], p)
+        #except Exception as e:
+        #    print("DEBUG: input to PI = "+str([cur_beta - o for o in evalpoints_in if cur_beta != o]))
+        w.append(den)  # w[j] = den
+
+    l = []  # np.zeros((len(evalpoints_out)),dtype='int64')
+    for i in range(len(evalpoints_out)):
+        #tmp = int(PI([evalpoints_out[i] - o for o in evalpoints_in], p)) % p
+        #l.append(tmp)
+        l.append(PI([evalpoints_out[i] - o for o in evalpoints_in], p))
+        
+        # l[i] = PI([evalpoints_out[i] - o for o in evalpoints_in], p)
+
+    for j in range(len(evalpoints_in)):
+        for i in range(len(evalpoints_out)):
+            den =  ((int(evalpoints_out[i]) - int(evalpoints_in[j])) % p) * w[j] % p # np.mod(np.mod(evalpoints_out[i] - evalpoints_in[j], p) * w[j], p)
+            #try:
+            U[i][j] = divmod(l[i], den, p)
+            #except Exception as e:
+            #    print("DEBUG: l[i] = "+str(l[i])+" den="+str(den)+" p="+str(p))
+
+    return U  # U.astype('int64')
+
+
+# supposed gen_lagrange from lightsecagg
+def gen_Lagrange_coeffs_del(alpha_s, beta_s, p, is_K1=0):
     if is_K1 == 1:
         num_alpha = 1
     else:
@@ -152,7 +225,12 @@ def gen_Lagrange_coeffs(alpha_s, beta_s, p, is_K1=0):
 
 def my_q(X, q_bit, p):
     # quantisation with parameter q_bit and prime p
+
+    
     X_int = np.round(X * (2 ** q_bit))
+
+
+    # \phi(x)
     is_negative = (abs(np.sign(X_int)) - np.sign(X_int)) / 2
     out = X_int + p * is_negative
     return out.astype("int64")
@@ -164,3 +242,5 @@ def my_q_inv(X_q, q_bit, p):
     is_negative = (abs(np.sign(flag)) + np.sign(flag)) / 2
     X_q = X_q - p * is_negative
     return X_q.astype(float) / (2 ** q_bit)
+
+

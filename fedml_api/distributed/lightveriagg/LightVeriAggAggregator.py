@@ -13,6 +13,34 @@ from .mpc_function import LCC_decoding_with_points
 from .utils import transform_finite_to_tensor, model_dimension
 
 
+def aggregate_mask_functioncall_reconstruction(d,N,U,T,p,active_clients, aggregate_encoded_mask_dict):
+    """
+    Recover the aggregate-mask via decoding
+    """
+    
+    logging.debug("d = {}, N = {}, U = {}, T = {}, p = {}".format(d, N, U, T, p))
+    print(active_clients)
+    print(len(active_clients))
+    print(len(aggregate_encoded_mask_dict))
+    print(aggregate_encoded_mask_dict)
+    alpha_s = np.array(range(N)) + 1
+    beta_s = np.array(range(U)) + (N+1)
+    logging.info("Server starts the reconstruction of aggregate_mask")
+    aggregate_encoded_mask_buffer = np.zeros((U, d // (U - T)), dtype="int64")
+    logging.info(
+        "active_clients = {}, aggregate_encoded_mask_dict = {}".format(
+            active_clients, aggregate_encoded_mask_dict
+        )
+    )
+    for i, client_idx in enumerate(active_clients):
+        aggregate_encoded_mask_buffer[i, :] = aggregate_encoded_mask_dict[client_idx]
+    eval_points = alpha_s[active_clients]
+    aggregate_mask = LCC_decoding_with_points(aggregate_encoded_mask_buffer, eval_points, beta_s, p)
+    logging.info("Server finish the reconstruction of aggregate_mask via LCC decoding")
+    aggregate_mask = np.reshape(aggregate_mask, (U * (d // (U - T)), 1))
+    aggregate_mask = aggregate_mask[0:d]
+    return aggregate_mask
+
 class LightVeriAggAggregator(object):
     def __init__(
         self,
@@ -179,13 +207,17 @@ class LightVeriAggAggregator(object):
 
     def aggregate_mask_reconstruction(self, active_clients):
         """
-        Recover the aggregate-mask via decoding
+        Recover the aggregate-mask via decoding. Calls aggregate_mask_functioncall_reconstruction
         """
+        
         d = self.total_dimension
         N = self.worker_num
         U = self.targeted_number_active_clients
         T = self.privacy_guarantee
         p = self.prime_number
+
+        return aggregate_mask_functioncall_reconstruction(d,N,U,T,p,active_clients)
+        """
         logging.debug("d = {}, N = {}, U = {}, T = {}, p = {}".format(d, N, U, T, p))
 
         alpha_s = np.array(range(N)) + 1
@@ -205,7 +237,8 @@ class LightVeriAggAggregator(object):
         aggregate_mask = np.reshape(aggregate_mask, (U * (d // (U - T)), 1))
         aggregate_mask = aggregate_mask[0:d]
         return aggregate_mask
-
+        """
+        
     def aggregate_model_reconstruction(self, active_clients_first_round, active_clients_second_round):
         start_time = time.time()
         aggregate_mask = self.aggregate_mask_reconstruction(active_clients_second_round)

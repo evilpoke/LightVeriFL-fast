@@ -642,7 +642,7 @@ if __name__ == "__main__":
             
             y_i = [0] * d
             for i in range(d):
-                y_i[i] = int(x_i[i] + mask[i] % p_model)
+                y_i[i] = int(x_i[i] + mask[i] % p_model)  # mask is the secagg mask
             # y_i = list(y_i)
 
             # print(f"x ={x_i}, mask = {mask}, y={y_i}")

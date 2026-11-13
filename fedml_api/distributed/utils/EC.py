@@ -8,7 +8,10 @@ import binascii
 import time
 #from fedml_api.distributed.lightveriagg.utils import gen_Lagrange_coeffs
 #from fedml_api.distributed.utils.function import matmul_mod
-from fedml_api.distributed.lightveriagg.utils import transform_tensor_to_finite
+#from fedml_api.distributed.lightveriagg.utils import gen_Lagrange_coeffs, transform_tensor_to_finite
+
+from fedml_api.distributed.utils.function import matmul_mod
+from fedml_api.distributed.lightveriagg.utils import gen_Lagrange_coeffs, transform_tensor_to_finite
 import numpy as np
 import math
 
@@ -18,7 +21,7 @@ from fastecdsa.point import Point
 from tqdm import tqdm
 
 
-def PI(vals, p):  # upper-case PI -- product of inputs
+def PI_del(vals, p):  # upper-case PI -- product of inputs
     accum = 1
     for v in vals:
         tmp = np.mod(v, p)
@@ -244,7 +247,6 @@ def evaluate_hash(aggregate_hash, client_hashes):
         print("Forged aggregation. Process terminated.")
         return False
 
-
 def LightVeriFL_enc_EC(hash, n_array, evalpoints_in, evalpoints_out, curve):
     '''
     
@@ -346,6 +348,8 @@ def add_single_field_element(firstelement, secondelement, prime):
 
     """
     firstelement = firstelement + secondelement
+    #if firstelement >= prime:
+    #    raise ValueError("Field elements exceed non-grapping mod")
     #return firstelement# np.mod(firstelement, prime)
     return firstelement % prime #np.mod(firstelement, prime)
     
@@ -373,6 +377,11 @@ def different_generators():
     return distinct_bases
 
 def compute_elgamal_commitment_to_hash_randomness(hash, randomness):
+    assert hash.x != 0 and hash.y != 0, "hash may not just be zero"
+    assert randomness != 0, "randomness would just vanish"
+    #print(type(randomness))
+        
+    #exit(1)
     # hash is a group element
     # randomness is a field / scalar element
     # returns the tuple (c1, c2)
@@ -396,6 +405,8 @@ def compute_elgamal_commitment_to_hash_randomness(hash, randomness):
     M_with_hash = [hash, h_powof_r]   #[0]]
     #print(hash)
     #print(h_powof_r)
+    for var in M_with_hash:
+        assert (var.x != 0 and var.y != 0), "erroneous point"
     c2 = PI_addEC(M_with_hash)
 
     return (c1, c2)
@@ -666,21 +677,14 @@ def test2():
     #print(aggregated_commitments_throughcommitagg)
 
     
-
-
-
-
-if __name__ == "__main__":
-    print("=======Test 1===================")
-
-    test2()
-
-    print("=======Test 2===================")
+def test1():
+    # weird partial gradient test
     print("  Test of MDS codes on EC \n ")
 
     # Let's check how it works.
     d = 10  # dimension of the gradient
     N = 10  # number of clients
+    p = p_model
 
     # R = 2**24 and B = 2**34 (i.e., the maximum number of clients is B/R = 210 = 1024) in VeriFL paper
     # In VeriFL the maximum number of clients is B/R = 2**10 = 1024
@@ -695,22 +699,22 @@ if __name__ == "__main__":
     for i in range(N):
         gradients[i, :] = random.sample(range(R), k=d)
 
-    H = generate_hash(gradients[0, :], alpha)
-    R = [generate_hash(gradients[1, :], alpha),
-         generate_hash(gradients[2, :], alpha)]  # this should be changed to random hash selection.
+    H = generate_hash(gradients[0, :], alpha, d)
+    R = [generate_hash(gradients[1, :], alpha, d),
+         generate_hash(gradients[2, :], alpha, d)]  # this should be changed to random hash selection.
 
     # print(len(R))
 
     alpha_s = [0, 1, 2]
     beta_s = [3, 4, 5]
 
-    W_enc = gen_Lagrange_coeffs(alpha_s, beta_s, curve_n)
-    V_dec = gen_Lagrange_coeffs(beta_s, [alpha_s[0]], curve_n)
+    W_enc = gen_Lagrange_coeffs(alpha_s, beta_s, p)
+    V_dec = gen_Lagrange_coeffs(beta_s, [alpha_s[0]], p)
 
     print(f"W_enc = {W_enc}")
     print(f"V_dec = {V_dec}\n")
 
-    tmp = matmul_mod(V_dec, W_enc, curve_n)
+    tmp = matmul_mod(V_dec, W_enc, p)
 
     print(f"V_dec * W_enc = {tmp}")
 
@@ -726,3 +730,16 @@ if __name__ == "__main__":
     print("\n  Test of MDS codes on EC ends. ")
     print("==========================")
 
+
+
+
+
+
+if __name__ == "__main__":
+    print("=======Test 1===================")
+
+    #test2()
+
+    print("=======Test 2===================")
+    test1()
+    

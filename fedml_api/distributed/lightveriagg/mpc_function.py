@@ -1,3 +1,4 @@
+from fedml_api.distributed.lightveriagg.utils import gen_Lagrange_coeffs, gen_Lagrange_coeffs_lightsecagg
 import numpy as np
 import torch
 import copy
@@ -28,7 +29,7 @@ def divmod(_num, _den, _p):
     return np.mod(np.int64(_num) * np.int64(_inv), _p)
 
 
-def PI(vals, p):  # upper-case PI -- product of inputs
+def PI_del(vals, p):  # upper-case PI -- product of inputs
     accum = np.int64(1)
     for v in vals:
         tmp = np.mod(v, p)
@@ -43,7 +44,7 @@ def LCC_encoding_with_points(X, alpha_s, beta_s, p):
     #      so: |beta_s| = length of the to be encoded array = z_i1,z_i2,...z_iU-T,n_iU-T+1,n_iU
     
     m, d = np.shape(X)
-    U = gen_Lagrange_coeffs(beta_s, alpha_s, p).astype("int64")     # U = matrix W = 
+    U = gen_Lagrange_coeffs_lightsecagg(beta_s, alpha_s, p).astype("int64")     # U = matrix W = 
     X_LCC = np.zeros((len(beta_s), d), dtype="int64")               # shape of the encoding = (d/U-T) x N   (for N targets?) TODO: check this
     for i in range(len(beta_s)):
         X_LCC[i, :] = np.dot(np.reshape(U[i, :], (1, len(alpha_s))), X)     # multi.. 
@@ -53,13 +54,13 @@ def LCC_encoding_with_points(X, alpha_s, beta_s, p):
 def LCC_decoding_with_points(f_eval, eval_points, target_points, p):
     alpha_s_eval = eval_points
     beta_s = target_points
-    U_dec = gen_Lagrange_coeffs(beta_s, alpha_s_eval, p)
+    U_dec = gen_Lagrange_coeffs_lightsecagg(beta_s, alpha_s_eval, p)   #gen_Lagrange_coeffs(beta_s, alpha_s_eval, p)  
     f_recon = np.mod((U_dec).dot(f_eval), p)
 
     return f_recon
 
 
-def gen_Lagrange_coeffs(alpha_s, beta_s, p, is_K1=0):
+def gen_Lagrange_coeffs_del(alpha_s, beta_s, p, is_K1=0):
     #
     #   We build the term p(X) = sum A_j prod(x-beta_i)/(beta_j-beta_i) + ... sum R_j prod(x-beta_i)/(beta_j-beta_i)
     #

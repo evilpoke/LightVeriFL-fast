@@ -1,7 +1,16 @@
 #from ....fedml_api
 
+from lightverirepo.fedml_api.distributed.lightveriagg.mpc_function import model_masking
+from lightverirepo.fedml_api.distributed.lightveriagg.utils import transform_tensor_to_finite
+from lightverirepo.fedml_api.distributed.utils.EC import PI_addEC, add_field_elements, compute_elgamal_commitment_to_hash_randomness, generate_point_EC, hash_a_sample_gradient
 import numpy as np
 
+
+"""
+
+    IGNORE THIS TESTING
+
+"""
 
 
 def test1():
@@ -17,38 +26,7 @@ def different_generators():
     return distinct_bases
 
 
-def hash_a_sample_gradient(total_dimension, gradient):
-    
-    alpha = np.ones((total_dimension,), dtype=int)
 
-    distinct_bases = distinct_point_compute(alpha)
-    # compute g_i ** gradient[i] for a client
-    temp_hash = tuple(gradient[i] * distinct_bases[i] for i in range(total_dimension))
-    # compute the product for [d]. This product translates into addition on the elliptic curve
-    hash_client = temp_hash[0]
-    for i in range(1, total_dimension):
-        hash_client = hash_client + temp_hash[i]
-
-    return hash_client
-
-def compute_elgamal_commitment_to_hash_randomness(hash, randomness):
-    # hash is a group element
-    # randomness is a field / scalar element
-    # returns the tuple (c1, c2)
-
-    #alpha = np.ones((1,), dtype=int)
-
-    distinct_base = different_generators()
-
-
-    g_powof_r = randomness * distinct_base[0]
-    h_powof_r = randomness * distinct_base[1]
-    c1 = g_powof_r
-
-    M_with_hash = [hash, h_powof_r]
-    c2 = PI_addEC(M_with_hash)
-
-    return (c1, c2)
 
 
 def test2():

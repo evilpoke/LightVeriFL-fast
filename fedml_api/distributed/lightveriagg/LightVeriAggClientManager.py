@@ -257,7 +257,7 @@ class LightVeriAggClientManager(ClientManager):
         aggregate_rnd_U = msg_params.get(MyMessage.MSG_ARG_KEY_AGGREGATE_RND_FOR_U)
         aggregate_rnd_D = msg_params.get(MyMessage.MSG_ARG_KEY_AGGREGATE_RND_FOR_D)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
-
+        
         
         self.current_i_trial += 1
         self.agg_client_hashes_epochs_U[self.current_i_trial] = aggregate_hash_U

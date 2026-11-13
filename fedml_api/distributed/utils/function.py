@@ -164,7 +164,7 @@ def gen_Lagrange_coeffs_fixed(evalpoints_in, evalpoints_out, p, is_K1=0):
     
     
 
-def gen_Lagrange_coeffs(evalpoints_in, evalpoints_out, p, is_K1=0):
+def gen_Lagrange_coeffs_del(evalpoints_in, evalpoints_out, p, is_K1=0):
     '''
     input
         - evalpoints_in  : array of evaluation points corresponding to encoding inputs (K)
