@@ -228,6 +228,10 @@ def test1():
 
     print("done")
 
+def test9():
+    # test mask reconstruction of LightSecAgg
+
+    TODO
 
 def test8():
     # test lightsecagg aggregation
@@ -285,7 +289,7 @@ def test8():
     for i in tqdm(range(numberclients)): 
         # ----- training, commitment  -----
         # ----- creating a commitment -----
-        weights = np.random.randint(weights_field, size=(d, 1))
+        weights = np.random.randint(99, size=(d, 1)) #np.random.randint(weights_field, size=(d, 1))
         weights = {'something': weights}
         gradient = transform_tensor_to_finite(weights, weights_field, q_bits)
         gradients.append(gradient)
@@ -320,7 +324,7 @@ def test8():
     # aggreate masked gradients and subtract mask
     averaged_params = submitted_masked_gradients[idx_clients_that_can_aggregate[0]] 
     pos = 0
-    for j, k in enumerate(averaged_params): # NOTE: this loop will only execute once!. So we are sticking as closely as possible to the original function
+    for j, k in enumerate(averaged_params):
         for i, client_idx in enumerate(idx_clients_that_can_aggregate):
             local_model_params = submitted_masked_gradients[client_idx]
             if i == 0:
@@ -336,10 +340,7 @@ def test8():
         averaged_params[k] -= cur_mask
         pos += d
 
-    #print(averaged_params)
-    #exit(1)
-    # DEBUG
-    #-----
+    
     grad = gradients[0]["something"]
     for g in range(1,N):
         
@@ -352,6 +353,8 @@ def test8():
     # decoded_aggregated_hashes and decoded_aggregated_randomness are decoded stuff
     #print(averaged_params["something"])
     #print(grad)
+    print("averaged_params[something]: " + str(averaged_params["something"]))
+    print("grads: " + str(grad))
     
     assert averaged_params["something"][0] == grad[0]
 
