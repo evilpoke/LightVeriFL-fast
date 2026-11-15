@@ -46,7 +46,22 @@ python -m pytest -q fedml_api/distributed/utils/tests.py
 ### Benchmark against LightVeriFL + SecAgg
 `benchmark_vs_lightverifl_secagg.py` (see its docstring) runs both protocols on the same quantized
 local models in the single-process mode (the baseline is `ServerVerification/LightVeriFL_SecAgg_single_process.py`,
-a single-process port of the paper's MPI code).
+a single-process port of the paper's MPI code). Results: `benchmark_results/report.md` (+ csv, figures).
+
+Findings (one iteration, T = floor((N-1)/2), L = 10, N <= 40, d <= 1M, see the report):
+* computation: with alpha_l = 1 LightVeriAgg costs the same as LightVeriFL + SecAgg (e.g. N = 10,
+  d = 100K: 3.40 s vs 3.47 s per iteration with parallel clients). Both are dominated by the shared
+  LightVeriFL parts (hash of the d-dimensional model, offline EC mask encoding ~ N(T+1) point
+  multiplications); LightSecAgg vs SecAgg and El Gamal vs the Pedersen variant differ by milliseconds.
+  The verification time does not grow with the dropout rate (one-shot decoding in both).
+* the batch check with private 64-bit coefficients alpha_l (needed against cross-round forgeries)
+  costs ~8x the plain-sum batch check (scalar sizes grow from ~10 to ~75 bits): +0.4 s per iteration
+  for d = 10K, +3.6 s for d = 100K (amortized over L = 10).
+* communication: LightSecAgg's coded mask pieces make the per-client upload/download ~2.5x larger
+  (d = 100K: 1.07 MB / 1.00 MB vs 0.40 MB / 0.40 MB).
+* security: the baseline's commitment c = noise + g + h + l is not binding (a server can forge the
+  aggregate undetected) and its shared mask leaks every individual hash to the server plus one colluding
+  user; LightVeriAgg detects the forgery and uses independent masks (tests in fedml_api/distributed/utils/tests.py).
 
 ## Installation
 http://doc.fedml.ai/#/installation-distributed-computing
