@@ -600,5 +600,87 @@ def test_forged_hash_reconstruction_is_detected(tmp_path):
     assert "commitment check failed" in result["summary"]["verification_error"]
 
 
+# =====================================================================================================
+# the baseline of the benchmark: LightVeriFL + SecAgg in one process
+# =====================================================================================================
+def test_lightverifl_secagg_baseline_simulation():
+    from ServerVerification.LightVeriFL_SecAgg_single_process import LightVeriFLSecAggSimulation
+    N, T, d = 5, 2, 20
+    sim = LightVeriFLSecAggSimulation(N, T, d, L=2)
+    bench = Bench().activate()
+    try:
+        for rnd in range(2):
+            xs = [my_q(np.random.uniform(-1, 1, d), q_bits, p_model) for _ in range(N)]
+            surviving = [i for i in range(N) if i not in verification_dropouts(rnd, range(N), 0.4, T)]
+            assert len(surviving) == 3
+            sim.run_round(rnd, xs, surviving)
+    finally:
+        bench.deactivate()
+    log = sim.verification_log
+    assert all(r["commitments_ok"] and r["aggregate_correct"] and r["hash_correct"] for r in log)
+    assert log[0]["batch_ok"] is None and log[1]["batch_ok"] is True          # batch check after L = 2 rounds
+    labels = {r["label"] for r in bench.time}
+    assert "server: [A.3] SecAgg unmasking (SS decoding + PRG), recover y = sum x_i" in labels
+    assert any("[V.1]" in label for label in labels)
+
+
+def test_pedersen_variant_lets_a_server_forge_but_el_gamal_does_not(tmp_path):
+    # LightVeriFL's commitment c = noise + g + h + l is not binding: a server that adds delta to the
+    # aggregate model can shift the reconstructed hash by h(delta) and the noise by -h(delta) -- the
+    # commitment check and the batch check of the users both pass.
+    from ServerVerification.LightVeriFL_SecAgg_single_process import LightVeriFLSecAggSimulation
+    N, T, d = 4, 1, 12
+    sim = LightVeriFLSecAggSimulation(N, T, d, L=1)
+    delta = np.zeros(d, dtype=np.int64)
+    delta[3] = 777
+    sim.forged_delta = {0: delta}
+    xs = [my_q(np.random.uniform(-1, 1, d), q_bits, p_model) for _ in range(N)]
+    sim.run_round(0, xs, surviving=list(range(N)))
+    (rec,) = sim.verification_log
+    assert rec["forged"] and not rec["aggregate_correct"]
+    assert rec["commitments_ok"] and rec["batch_ok"]                     # forgery NOT detected
+
+    # the same attack against LightVeriAgg: the El Gamal commitment (r G, h + r H) is binding, so no
+    # randomness opens sum c_i to the shifted hash -> detected by the commitment check
+    class AdaptiveForgingServer(LightVeriAggServerManager):
+        delta = None
+
+        def send_message_sync_model_to_client(self, receive_id, global_model_params, client_index):
+            global_model_params = copy.deepcopy(global_model_params)
+            key = next(iter(global_model_params))
+            global_model_params[key].reshape(-1)[0] = (global_model_params[key].reshape(-1)[0] + 777) % p_model
+            AdaptiveForgingServer.delta = (key, 777)
+            super().send_message_sync_model_to_client(receive_id, global_model_params, client_index)
+
+        def send_message_sync_veriagg_to_client(self, receive_id, aggregate_hash_U, aggregate_hash_D,
+                                                aggregate_randomness_U, aggregate_randomness_D, client_index):
+            h_delta = ec_mul(777, get_hash_bases(1)[0])                    # h(delta), delta = 777 e_0
+            super().send_message_sync_veriagg_to_client(receive_id, ec_add(aggregate_hash_U, h_delta), aggregate_hash_D,
+                                                        aggregate_randomness_U, aggregate_randomness_D, client_index)
+
+    result = run_protocol(make_args(tmp_path, N=4, T=1, rounds=1, L=1), server_class=AdaptiveForgingServer)
+    assert not result["summary"]["all_rounds_verified"]
+    assert "commitment check failed" in result["summary"]["verification_error"]
+
+
+def test_shared_mask_of_the_baseline_leaks_individual_hashes():
+    # In LightVeriFL(+SecAgg) the same EC point z_i masks the hash and the commitment noise:
+    #   hz_i = h_i + z_i, noise_z_i = r_i + z_i (server)  and  c_i = r_i + g + h_i + l (every user).
+    # The server and ONE colluding user get 2 h_i = (hz_i - noise_z_i) + (c_i - g - l): every
+    # individual hash leaks (LightVeriFL's input privacy goal). LightVeriAgg masks h_i with an EC point
+    # and the El Gamal randomness with an independent integer, and c_i = (r_i G, h_i + r_i H) is hiding.
+    from ServerVerification.LightVeriFL_SecAgg_single_process import LightVeriFLSecAggSimulation
+    N, T, d = 4, 1, 12
+    sim = LightVeriFLSecAggSimulation(N, T, d, L=1)
+    xs = [my_q(np.random.uniform(-1, 1, d), q_bits, p_model) for _ in range(N)]
+    sim.run_round(0, xs, surviving=list(range(N)))
+    tr = sim.last_transcript
+    inv2 = pow(2, -1, curve_n)
+    for i in range(N):
+        two_h = ec_add(ec_add(tr["hz"][i], -tr["noise_z"][i]),
+                       ec_add(tr["commitments"][i], -ec_add(tr["Pedersen_g"], tr["Pedersen_l"])))
+        assert ec_mul(inv2, two_h) == tr["hashes"][i]
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-q"] + sys.argv[1:]))
