@@ -482,6 +482,9 @@ def plot_computation(bench: Bench, path, title: str = "") -> Optional[Path]:
         v = np.array([per_round[rd].get(label, 0.0) for rd in rounds])
         ax2.bar(rounds, v, bottom=bottom, label=label, color=cmap(i % 20), width=0.85)
         bottom += v
+    if len(rounds) > 1:
+        ax2.axhline(float(np.mean(bottom)), color="black", ls="--", lw=1,
+                    label="mean per round (%.2f s)" % float(np.mean(bottom)))
     ax2.set_xlabel("round")
     ax2.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax2.set_ylabel("seconds")

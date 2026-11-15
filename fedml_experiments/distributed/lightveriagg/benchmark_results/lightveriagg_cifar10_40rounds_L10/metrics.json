@@ -1,0 +1,1728 @@
+{
+ "summary": {
+  "name": "lightveriagg",
+  "rounds_completed": 40,
+  "rounds_requested": 40,
+  "verification_error": null,
+  "all_rounds_verified": true,
+  "wall_clock_s": 1621.8991535250002,
+  "messages_delivered": 4805,
+  "total_communication_bits": 996082656,
+  "final": {
+   "round": 39,
+   "test_acc": 0.3020833333333333,
+   "test_loss": 2.1074027678905387
+  },
+  "output_dir": "/tmp/claude-0/-home-user-LightVeriFL-fast/356980d8-6b97-5aab-9342-a64b93ecc763/scratchpad/rounds40/lightveriagg_N5_d30730_20261115-225008",
+  "estimated_round_latency": {
+   "compute_s": 8.919654322124895,
+   "comm_s": 0.30987643600000003,
+   "total_s": 9.229530758124895,
+   "rounds": 40,
+   "uplink_mbps": 10.0,
+   "downlink_mbps": 50.0
+  }
+ },
+ "config": {
+  "model": "lr",
+  "dataset": "cifar10",
+  "data_dir": "./../../../data/cifar10",
+  "partition_method": "homo",
+  "partition_alpha": 0.5,
+  "client_num_in_total": 5,
+  "client_num_per_round": 5,
+  "batch_size": 64,
+  "client_optimizer": "sgd",
+  "backend": "SP",
+  "lr": 0.001,
+  "wd": 0.001,
+  "epochs": 2,
+  "comm_round": 40,
+  "is_mobile": 1,
+  "frequency_of_the_test": 1,
+  "gpu_server_num": 1,
+  "gpu_num_per_server": 4,
+  "gpu_mapping_file": "gpu_mapping.yaml",
+  "gpu_mapping_key": "mapping_default",
+  "grpc_ipconfig_path": "grpc_ipconfig.csv",
+  "ci": 0,
+  "targeted_number_active_clients": 5,
+  "privacy_guarantee": 2,
+  "prime_number": 2147483647,
+  "precision_parameter": 10,
+  "veri_batch_size": 10,
+  "veri_alpha_bits": 64,
+  "veri_dropout_rate": 0.0,
+  "veri_dropout_seed": 0,
+  "single_process": 1,
+  "results_dir": "/tmp/claude-0/-home-user-LightVeriFL-fast/356980d8-6b97-5aab-9342-a64b93ecc763/scratchpad/rounds40",
+  "bench_name": "lightveriagg",
+  "uplink_mbps": 10.0,
+  "downlink_mbps": 50.0,
+  "round_idx": 39
+ },
+ "global": [
+  {
+   "round": 0,
+   "test_acc": 0.23657852564102563,
+   "test_loss": 2.1997643006153598
+  },
+  {
+   "round": 1,
+   "test_acc": 0.2581129807692308,
+   "test_loss": 2.17066214634822
+  },
+  {
+   "round": 2,
+   "test_acc": 0.2672275641025641,
+   "test_loss": 2.154824571731763
+  },
+  {
+   "round": 3,
+   "test_acc": 0.2721354166666667,
+   "test_loss": 2.145334937633612
+  },
+  {
+   "round": 4,
+   "test_acc": 0.2750400641025641,
+   "test_loss": 2.1390202274689307
+  },
+  {
+   "round": 5,
+   "test_acc": 0.27754407051282054,
+   "test_loss": 2.134266211436345
+  },
+  {
+   "round": 6,
+   "test_acc": 0.2782451923076923,
+   "test_loss": 2.1306999218769564
+  },
+  {
+   "round": 7,
+   "test_acc": 0.28044871794871795,
+   "test_loss": 2.1277033931169753
+  },
+  {
+   "round": 8,
+   "test_acc": 0.2824519230769231,
+   "test_loss": 2.1253760762703724
+  },
+  {
+   "round": 9,
+   "test_acc": 0.28175080128205127,
+   "test_loss": 2.1233793787467174
+  },
+  {
+   "round": 10,
+   "test_acc": 0.28365384615384615,
+   "test_loss": 2.1216405675961423
+  },
+  {
+   "round": 11,
+   "test_acc": 0.2848557692307692,
+   "test_loss": 2.120189461952601
+  },
+  {
+   "round": 12,
+   "test_acc": 0.285556891025641,
+   "test_loss": 2.118985353372036
+  },
+  {
+   "round": 13,
+   "test_acc": 0.28695913461538464,
+   "test_loss": 2.1178263288277845
+  },
+  {
+   "round": 14,
+   "test_acc": 0.2883613782051282,
+   "test_loss": 2.1168652864602895
+  },
+  {
+   "round": 15,
+   "test_acc": 0.2900641025641026,
+   "test_loss": 2.115986140874716
+  },
+  {
+   "round": 16,
+   "test_acc": 0.29086538461538464,
+   "test_loss": 2.1152161803001013
+  },
+  {
+   "round": 17,
+   "test_acc": 0.2916666666666667,
+   "test_loss": 2.114570229481428
+  },
+  {
+   "round": 18,
+   "test_acc": 0.2926682692307692,
+   "test_loss": 2.1139969443663573
+  },
+  {
+   "round": 19,
+   "test_acc": 0.2936698717948718,
+   "test_loss": 2.11351410089395
+  },
+  {
+   "round": 20,
+   "test_acc": 0.29377003205128205,
+   "test_loss": 2.1130103728710075
+  },
+  {
+   "round": 21,
+   "test_acc": 0.2942708333333333,
+   "test_loss": 2.112528774982844
+  },
+  {
+   "round": 22,
+   "test_acc": 0.29577323717948717,
+   "test_loss": 2.112066375903594
+  },
+  {
+   "round": 23,
+   "test_acc": 0.2958733974358974,
+   "test_loss": 2.1116132782055783
+  },
+  {
+   "round": 24,
+   "test_acc": 0.2965745192307692,
+   "test_loss": 2.1112208993006973
+  },
+  {
+   "round": 25,
+   "test_acc": 0.29627403846153844,
+   "test_loss": 2.110871923275483
+  },
+  {
+   "round": 26,
+   "test_acc": 0.29627403846153844,
+   "test_loss": 2.110532190555181
+  },
+  {
+   "round": 27,
+   "test_acc": 0.29697516025641024,
+   "test_loss": 2.1102384665073495
+  },
+  {
+   "round": 28,
+   "test_acc": 0.2978766025641026,
+   "test_loss": 2.1099110520803013
+  },
+  {
+   "round": 29,
+   "test_acc": 0.2982772435897436,
+   "test_loss": 2.1096446911493936
+  },
+  {
+   "round": 30,
+   "test_acc": 0.29857772435897434,
+   "test_loss": 2.10937831340692
+  },
+  {
+   "round": 31,
+   "test_acc": 0.29897836538461536,
+   "test_loss": 2.109116557316902
+  },
+  {
+   "round": 32,
+   "test_acc": 0.3000801282051282,
+   "test_loss": 2.1088287998468447
+  },
+  {
+   "round": 33,
+   "test_acc": 0.3004807692307692,
+   "test_loss": 2.1086024122360425
+  },
+  {
+   "round": 34,
+   "test_acc": 0.30058092948717946,
+   "test_loss": 2.108347007861504
+  },
+  {
+   "round": 35,
+   "test_acc": 0.3014823717948718,
+   "test_loss": 2.108115879388956
+  },
+  {
+   "round": 36,
+   "test_acc": 0.30228365384615385,
+   "test_loss": 2.107899159957201
+  },
+  {
+   "round": 37,
+   "test_acc": 0.3019831730769231,
+   "test_loss": 2.107696091517424
+  },
+  {
+   "round": 38,
+   "test_acc": 0.3021834935897436,
+   "test_loss": 2.1075297135573168
+  },
+  {
+   "round": 39,
+   "test_acc": 0.3020833333333333,
+   "test_loss": 2.1074027678905387
+  }
+ ],
+ "verification": [
+  {
+   "round": 0,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 1,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 2,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 3,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 4,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 5,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 6,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 7,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 8,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 9,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true,
+   "batch_checked_rounds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 10,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 11,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 12,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 13,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 14,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 15,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 16,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 17,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 18,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 19,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true,
+   "batch_checked_rounds": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 20,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 21,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 22,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 23,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 24,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 25,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 26,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 27,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 28,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 29,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true,
+   "batch_checked_rounds": [
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 30,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 31,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 32,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 33,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 34,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 35,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 36,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 37,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 38,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 39,
+   "client": 0,
+   "dropped_in_verification": false,
+   "commitments_ok": true,
+   "batch_checked_rounds": [
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 0,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 1,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 2,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 3,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 4,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 5,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 6,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 7,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 8,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 9,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true,
+   "batch_checked_rounds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 10,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 11,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 12,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 13,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 14,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 15,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 16,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 17,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 18,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 19,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true,
+   "batch_checked_rounds": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 20,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 21,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 22,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 23,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 24,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 25,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 26,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 27,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 28,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 29,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true,
+   "batch_checked_rounds": [
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 30,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 31,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 32,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 33,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 34,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 35,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 36,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 37,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 38,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 39,
+   "client": 1,
+   "dropped_in_verification": false,
+   "commitments_ok": true,
+   "batch_checked_rounds": [
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 0,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 1,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 2,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 3,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 4,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 5,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 6,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 7,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 8,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 9,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true,
+   "batch_checked_rounds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 10,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 11,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 12,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 13,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 14,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 15,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 16,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 17,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 18,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 19,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true,
+   "batch_checked_rounds": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 20,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 21,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 22,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 23,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 24,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 25,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 26,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 27,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 28,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 29,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true,
+   "batch_checked_rounds": [
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 30,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 31,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 32,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 33,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 34,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 35,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 36,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 37,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 38,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 39,
+   "client": 2,
+   "dropped_in_verification": false,
+   "commitments_ok": true,
+   "batch_checked_rounds": [
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 0,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 1,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 2,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 3,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 4,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 5,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 6,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 7,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 8,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 9,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true,
+   "batch_checked_rounds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 10,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 11,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 12,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 13,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 14,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 15,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 16,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 17,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 18,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 19,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true,
+   "batch_checked_rounds": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 20,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 21,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 22,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 23,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 24,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 25,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 26,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 27,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 28,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 29,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true,
+   "batch_checked_rounds": [
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 30,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 31,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 32,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 33,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 34,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 35,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 36,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 37,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 38,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 39,
+   "client": 3,
+   "dropped_in_verification": false,
+   "commitments_ok": true,
+   "batch_checked_rounds": [
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 0,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 1,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 2,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 3,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 4,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 5,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 6,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 7,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 8,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 9,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true,
+   "batch_checked_rounds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 10,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 11,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 12,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 13,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 14,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 15,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 16,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 17,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 18,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 19,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true,
+   "batch_checked_rounds": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 20,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 21,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 22,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 23,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 24,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 25,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 26,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 27,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 28,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 29,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true,
+   "batch_checked_rounds": [
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 30,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 31,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 32,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 33,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 34,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 35,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 36,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 37,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 38,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true
+  },
+  {
+   "round": 39,
+   "client": 4,
+   "dropped_in_verification": false,
+   "commitments_ok": true,
+   "batch_checked_rounds": [
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39
+   ],
+   "batch_ok": true
+  }
+ ]
+}

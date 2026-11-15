@@ -60,7 +60,9 @@ after another. Output in `results/benchmarks_<date>/`: (1) the setup of the run 
 5 clients, many more rounds than L) with `report.txt`, `communication.png`, `computation.png` (right
 panel: computation per round -- the amortized batch check makes every L-th round expensive, the other
 rounds of a batch are cheap); (2) the comparison with LightVeriFL + SecAgg with `report.md`,
-`scaling_N.png`, `scaling_d.png`.
+`scaling_N.png`, `scaling_d.png`. Example: `benchmark_results/lightveriagg_cifar10_40rounds_L10/`
+(40 rounds, L = 10: ~6.5-7 s per round, ~23-26 s in the rounds 9, 19, 29, 39 with the batch check,
+8.9 s per round on average).
 
 ### Tests
 ```
