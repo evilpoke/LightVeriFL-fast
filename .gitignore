@@ -1,0 +1,3 @@
+# datasets (e.g. data/cifar10, downloaded by torchvision) and run outputs
+/data/
+results/

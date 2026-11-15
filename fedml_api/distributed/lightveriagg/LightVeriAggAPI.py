@@ -5,6 +5,7 @@ from .LightVeriAggClientManager import LightVeriAggClientManager
 from .LightVeriAggServerManager import LightVeriAggServerManager
 from .LightVeriAggTrainer import LightVeriAggTrainer
 from .MyModelTrainer import MyModelTrainer
+from .single_process import FedML_lightveriagg_single_process
 
 
 def FedML_init():

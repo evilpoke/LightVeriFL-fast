@@ -2,6 +2,53 @@ from fedml_api.distributed.lightveriagg.utils import gen_Lagrange_coeffs, gen_La
 import numpy as np
 import torch
 import copy
+import secrets
+
+# Cryptographic masks must NOT come from the seeded global np.random state: main_lightveriagg.py seeds it
+# with 0 in every process, which made all clients draw the very same masks.
+_mask_rng = np.random.default_rng(secrets.randbits(128))
+
+
+def random_field_array(p, size):
+    """Uniformly random elements of F_p (int64) drawn from a cryptographically seeded generator."""
+    return _mask_rng.integers(0, p, size=size, dtype=np.int64)
+
+
+def matmul_mod(A, B, p):
+    """(A @ B) mod p without int64 overflow (np.dot overflows as soon as two products ~p^2 are summed)."""
+    A = np.asarray(A)
+    B = np.asarray(B)
+    if p >= 2 ** 31:  # products would not fit into int64: exact (slow) Python-int arithmetic
+        return np.mod(A.astype(object).dot(B.astype(object)), p).astype(np.int64)
+    A = np.mod(A.astype(np.int64), p)
+    B = np.mod(B.astype(np.int64), p)
+    out = np.zeros((A.shape[0], B.shape[1]), dtype=np.int64)
+    for k in range(A.shape[1]):
+        out = np.mod(out + np.outer(A[:, k], B[k, :]), p)  # every term < p^2 < 2^62
+    return out
+
+
+def padded_dimension(d, U, T):
+    """Smallest multiple of U-T that is >= d (LightSecAgg splits the mask into U-T equal sub-masks)."""
+    return int(np.ceil(float(d) / (U - T))) * (U - T)
+
+
+def verification_dropouts(round_idx, active_clients, dropout_rate, T, seed=0):
+    """Simulated dropouts of the verification phase (as in the LightVeriFL experiments).
+
+    Every round, floor(dropout_rate * |U_1|) of the users in U_1 drop after having received the
+    aggregate model: they do not upload their aggregated encoded verification masks (message 10)
+    and do not verify. At least T+1 users must survive (the verification masks are decoded from
+    T+1 shares). The choice is a deterministic function of (seed, round) so that the server knows
+    how many uploads to wait for -- it plays the role of the server's time-out.
+    """
+    active = sorted(int(c) for c in active_clients)
+    num = int(np.floor(float(dropout_rate) * len(active) + 1e-9))
+    num = min(num, len(active) - (T + 1))
+    if num <= 0:
+        return []
+    rng = np.random.RandomState((int(seed) * 1000003 + int(round_idx)) % (2 ** 32))
+    return sorted(int(c) for c in rng.choice(active, size=num, replace=False))
 
 
 def modular_inv(a, p):
@@ -44,18 +91,16 @@ def LCC_encoding_with_points(X, alpha_s, beta_s, p):
     #      so: |beta_s| = length of the to be encoded array = z_i1,z_i2,...z_iU-T,n_iU-T+1,n_iU
     
     m, d = np.shape(X)
-    U = gen_Lagrange_coeffs_lightsecagg(beta_s, alpha_s, p).astype("int64")     # U = matrix W = 
-    X_LCC = np.zeros((len(beta_s), d), dtype="int64")               # shape of the encoding = (d/U-T) x N   (for N targets?) TODO: check this
-    for i in range(len(beta_s)):
-        X_LCC[i, :] = np.dot(np.reshape(U[i, :], (1, len(alpha_s))), X)     # multi.. 
-    return np.mod(X_LCC, p)
+    U = gen_Lagrange_coeffs_lightsecagg(beta_s, alpha_s, p).astype("int64")     # U = matrix W, shape (|beta_s|, |alpha_s|)
+    X_LCC = matmul_mod(U, X, p)                                                 # encoding: |beta_s| x d (one row per client)
+    return X_LCC
 
 
 def LCC_decoding_with_points(f_eval, eval_points, target_points, p):
     alpha_s_eval = eval_points
     beta_s = target_points
-    U_dec = gen_Lagrange_coeffs_lightsecagg(beta_s, alpha_s_eval, p)   #gen_Lagrange_coeffs(beta_s, alpha_s_eval, p)  
-    f_recon = np.mod((U_dec).dot(f_eval), p)
+    U_dec = gen_Lagrange_coeffs_lightsecagg(beta_s, alpha_s_eval, p)   #gen_Lagrange_coeffs(beta_s, alpha_s_eval, p)
+    f_recon = matmul_mod(U_dec, f_eval, p)
 
     return f_recon
 
@@ -128,15 +173,12 @@ def mask_encoding(
     N=5
     d=7850"""
 
-    # local_mask is d large  (obviously)
-    print("DEBUG testing----------------------------------------------")
-    n_i = np.random.randint(p, size=(T * d // (U - T), 1))  # randomly sample T times the blindings n_ik  \in F^( d/[U-T] )
-    LCC_in = np.concatenate([local_mask, n_i], axis=0)      # TODO: why is the local_mask = z_i not further split up?
-    print("DEBUG: "+ str(U) + " " + str(d) + " " + str(d // (U - T)))
-    print("DEBUG llc: "+ str(LCC_in.shape))
-    #exit(1)
+    # local_mask has d entries, d has to be a multiple of U-T (see padded_dimension)
+    assert d % (U - T) == 0 and np.size(local_mask) == d, "mask length must be a multiple of U-T (use padded_dimension)"
+    n_i = random_field_array(p, (T * d // (U - T), 1))      # randomly sample T times the blindings n_ik  \in F^( d/[U-T] )
+    LCC_in = np.concatenate([np.reshape(local_mask, (d, 1)), n_i], axis=0)
 
-    LCC_in = np.reshape(LCC_in, (U, d // (U - T)))          # 
+    LCC_in = np.reshape(LCC_in, (U, d // (U - T)))          # rows 0..U-T-1: the U-T sub-masks [z_i]_k, rows U-T..U-1: [n_i]_k
     
     
     # LCC_in = 
@@ -149,10 +191,9 @@ def mask_encoding(
 
 
 def compute_aggregate_encoded_mask(encoded_mask_dict, p, active_clients):
-    aggregate_encoded_mask = np.zeros((np.shape(encoded_mask_dict[0])))
+    aggregate_encoded_mask = np.zeros(np.shape(encoded_mask_dict[active_clients[0]]), dtype=np.int64)
     for client_id in active_clients:
-        aggregate_encoded_mask += encoded_mask_dict[client_id]
-    aggregate_encoded_mask = np.mod(aggregate_encoded_mask, p).astype("int")
+        aggregate_encoded_mask = np.mod(aggregate_encoded_mask + np.asarray(encoded_mask_dict[client_id], dtype=np.int64), p)
     return aggregate_encoded_mask
 
 

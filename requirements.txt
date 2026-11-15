@@ -1,0 +1,16 @@
+# tested with Python 3.13, Open MPI 4.1.6 (apt: openmpi-bin libopenmpi-dev; fastecdsa needs libgmp-dev)
+torch
+torchvision
+numpy
+mpi4py
+fastecdsa>=2.2,<4      # 4.x removed Curve.gx/gy and Point(0, 0, curve=None) used by the EC code
+protobuf==3.20.3       # the generated gRPC stubs of fedml_core are too old for protobuf >= 4
+grpcio
+paho-mqtt
+psutil
+setproctitle
+debugpy
+tqdm
+h5py
+matplotlib
+pytest

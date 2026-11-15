@@ -4,40 +4,36 @@ import random
 import time
 
 from fastecdsa.curve import P256
-from fedml_api.distributed.utils.EC import LightVeriFL_dec_EC, PI_addEC
+from fedml_api.distributed.utils.EC import LightVeriFL_dec_EC, LightVeriFL_dec_scalar, PI_addEC, curve_n, \
+    veri_eval_points
 import numpy as np
 import torch
 #import wandb
 
-from .mpc_function import LCC_decoding_with_points
-from .utils import transform_finite_to_tensor, model_dimension
+from .mpc_function import LCC_decoding_with_points, padded_dimension
+from .utils import transform_finite_to_tensor, model_dimension, finite_aggregate_to_averaged_tensor
 
 
 def aggregate_mask_functioncall_reconstruction(d,N,U,T,p,active_clients, aggregate_encoded_mask_dict):
     """
-    Recover the aggregate-mask via decoding
+    Recover the aggregate-mask via decoding (from the first U of the active clients)
+    d is the model dimension, the masks have padded_dimension(d, U, T) entries
     """
     
     logging.debug("d = {}, N = {}, U = {}, T = {}, p = {}".format(d, N, U, T, p))
-    print(active_clients)
-    print(len(active_clients))
-    print(len(aggregate_encoded_mask_dict))
-    print(aggregate_encoded_mask_dict)
+    active_clients = list(active_clients)[:U]
+    assert len(active_clients) == U, "LightSecAgg needs the aggregated encoded masks of U = %d clients" % U
+    d_pad = padded_dimension(d, U, T)
     alpha_s = np.array(range(N)) + 1
     beta_s = np.array(range(U)) + (N+1)
     logging.info("Server starts the reconstruction of aggregate_mask")
-    aggregate_encoded_mask_buffer = np.zeros((U, d // (U - T)), dtype="int64")
-    logging.info(
-        "active_clients = {}, aggregate_encoded_mask_dict = {}".format(
-            active_clients, aggregate_encoded_mask_dict
-        )
-    )
+    aggregate_encoded_mask_buffer = np.zeros((U, d_pad // (U - T)), dtype="int64")
     for i, client_idx in enumerate(active_clients):
         aggregate_encoded_mask_buffer[i, :] = aggregate_encoded_mask_dict[client_idx]
     eval_points = alpha_s[active_clients]
     aggregate_mask = LCC_decoding_with_points(aggregate_encoded_mask_buffer, eval_points, beta_s, p)
     logging.info("Server finish the reconstruction of aggregate_mask via LCC decoding")
-    aggregate_mask = np.reshape(aggregate_mask, (U * (d // (U - T)), 1))
+    aggregate_mask = np.reshape(aggregate_mask, (U * (d_pad // (U - T)), 1))
     aggregate_mask = aggregate_mask[0:d]
     return aggregate_mask
 
@@ -134,16 +130,11 @@ class LightVeriAggAggregator(object):
             self.flag_client_model_uploaded_dict[idx] = False
         return True
 
-    def check_whether_all_aggregate_veri_mask_receive(self):
-        for val in self.flag_client_aggregate_veri_encoded_mask_uploaded_U_dict.values():
-            if val == False:
-                return False
-
-        for val in self.flag_client_aggregate_veri_encoded_mask_uploaded_D_dict.values():
-            if val == False:
-                return False
-            
-        return True
+    def reset_veri_aggregate_masks(self):
+        self.aggregate_veri_encoded_mask_U_dict = dict()
+        self.flag_client_aggregate_veri_encoded_mask_uploaded_U_dict = dict()
+        self.aggregate_veri_encoded_mask_D_dict = dict()
+        self.flag_client_aggregate_veri_encoded_mask_uploaded_D_dict = dict()
 
     def check_whether_all_aggregate_encoded_mask_receive(self):
         for idx in range(self.worker_num):
@@ -153,56 +144,34 @@ class LightVeriAggAggregator(object):
             self.flag_client_aggregate_encoded_mask_uploaded_dict[idx] = False
         return True
 
-    def aggregate_veriaggmask_reconstruction_U(self, active_clients_first_round, active_clients_second_round):
+    def aggregate_veriaggmask_reconstruction_U(self, active_clients_veri):
         """
-        Recover the veri mask
+        Recover the aggregate veri mask (sum zh_i, sum zr_i) of the surviving users U = U_1
         """
+        return self.decode_veri_aggregate(self.aggregate_veri_encoded_mask_U_dict, active_clients_veri)
 
-        alpha_s = list(range(T + 1))
-        beta_s = list(range(len(active_clients_second_round), len(active_clients_second_round) + N))
-
-        start_time = time.time()
-        aggregate_mask_still_encoded_U = self.aggregate_mask_reconstruction_ECC(self.aggregate_veri_encoded_mask_U_dict, active_clients_second_round)
-        
-        # decoding
-        dec_z = LightVeriFL_dec_EC(aggregate_mask_still_encoded_U, alpha_s, beta_s[active_clients_second_round], P256)
-        
-        return dec_z
-
-    def aggregate_veriaggmask_reconstruction_D(self, active_clients_first_round, active_clients_second_round):
+    def aggregate_veriaggmask_reconstruction_D(self, active_clients_veri):
         """
-        Recover the veri mask
+        Recover the aggregate veri mask (sum zh_i, sum zr_i) of the dropped users D = [N] \\ U_1
         """
+        return self.decode_veri_aggregate(self.aggregate_veri_encoded_mask_D_dict, active_clients_veri)
 
-        alpha_s = list(range(self.T + 1))
-        beta_s = list(range(len(active_clients_second_round), len(active_clients_second_round) + N))
-
-        start_time = time.time()
-        aggregate_mask_still_encoded_U = self.aggregate_mask_reconstruction_ECC(self.aggregate_veri_encoded_mask_D_dict, active_clients_second_round)
-        
-        # decoding
-        dec_z = LightVeriFL_dec_EC(aggregate_mask_still_encoded_U, alpha_s, beta_s[active_clients_second_round], P256)
-
-        return dec_z
-
-    def aggregate_mask_reconstruction_ECC(self, aggregate_veri_encoded_mask_dict, active_clients):
+    def decode_veri_aggregate(self, aggregate_veri_encoded_mask_dict, active_clients_veri):
         """
-        Recover the aggregate-mask via decoding
+        One-shot MDS decoding from T+1 aggregated encoded verification masks:
+        EC part (mask of the hashes) and integer part (mask of the El Gamal randomness)
         """
-        
         N = self.worker_num
-        U = self.targeted_number_active_clients
         T = self.privacy_guarantee
-        p = self.prime_number
-        logging.debug("d = {}, N = {}, U = {}, T = {}, p = {}".format(d, N, U, T, p))
-
-        alpha_s = np.array(range(N)) + 1
-        beta_s = np.array(range(U)) + (N+1)
-        logging.info("Server starts the reconstruction of aggregate_mask")
-
-        all_packages_to_receiver = PI_addEC(list(aggregate_veri_encoded_mask_dict.values()))
-        
-        return all_packages_to_receiver
+        evalpoints_in, evalpoints_out = veri_eval_points(N, T)
+        responders = sorted(active_clients_veri)[: T + 1]
+        assert len(responders) == T + 1, "need T+1 = %d aggregated encoded verification masks" % (T + 1)
+        shares_hash = [aggregate_veri_encoded_mask_dict[i][0] for i in responders]
+        shares_rnd = [aggregate_veri_encoded_mask_dict[i][1] for i in responders]
+        points = [evalpoints_out[i] for i in responders]
+        dec_zh = LightVeriFL_dec_EC(shares_hash, evalpoints_in, points, P256)
+        dec_zr = LightVeriFL_dec_scalar(shares_rnd, evalpoints_in, points, curve_n)
+        return dec_zh, dec_zr
 
 
     def aggregate_mask_reconstruction(self, active_clients):
@@ -216,63 +185,43 @@ class LightVeriAggAggregator(object):
         T = self.privacy_guarantee
         p = self.prime_number
 
-        return aggregate_mask_functioncall_reconstruction(d,N,U,T,p,active_clients)
-        """
-        logging.debug("d = {}, N = {}, U = {}, T = {}, p = {}".format(d, N, U, T, p))
-
-        alpha_s = np.array(range(N)) + 1
-        beta_s = np.array(range(U)) + (N+1)
-        logging.info("Server starts the reconstruction of aggregate_mask")
-        aggregate_encoded_mask_buffer = np.zeros((U, d // (U - T)), dtype="int64")
-        logging.info(
-            "active_clients = {}, aggregate_encoded_mask_dict = {}".format(
-                active_clients, self.aggregate_encoded_mask_dict
-            )
-        )
-        for i, client_idx in enumerate(active_clients):
-            aggregate_encoded_mask_buffer[i, :] = self.aggregate_encoded_mask_dict[client_idx]
-        eval_points = alpha_s[active_clients]
-        aggregate_mask = LCC_decoding_with_points(aggregate_encoded_mask_buffer, eval_points, beta_s, p)
-        logging.info("Server finish the reconstruction of aggregate_mask via LCC decoding")
-        aggregate_mask = np.reshape(aggregate_mask, (U * (d // (U - T)), 1))
-        aggregate_mask = aggregate_mask[0:d]
-        return aggregate_mask
-        """
+        return aggregate_mask_functioncall_reconstruction(d,N,U,T,p,active_clients, self.aggregate_encoded_mask_dict)
         
     def aggregate_model_reconstruction(self, active_clients_first_round, active_clients_second_round):
+        """
+        returns y = sum_{i in U_1} x_i in F_p (dict of int64 arrays) and the new global model y / |U_1| (tensors)
+        """
         start_time = time.time()
         aggregate_mask = self.aggregate_mask_reconstruction(active_clients_second_round)
         p = self.prime_number
         q_bits = self.precision_parameter
         logging.info("Server starts the reconstruction of aggregate_model")
-        averaged_params = self.model_dict[active_clients_first_round[0]]
+        first = self.model_dict[active_clients_first_round[0]]
+        aggregate_finite = dict()
         pos = 0
-        for j, k in enumerate(averaged_params):
+        for j, k in enumerate(first):
+            acc = np.zeros(np.shape(first[k]), dtype=np.int64)
             for i, client_idx in enumerate(active_clients_first_round):
-                local_model_params = self.model_dict[client_idx]
-                if i == 0:
-                    averaged_params[k] = local_model_params[k]
-                else:
-                    averaged_params[k] += local_model_params[k]
-            cur_shape = np.shape(averaged_params[k])
+                acc = np.mod(acc + np.asarray(self.model_dict[client_idx][k], dtype=np.int64), p)
+            cur_shape = np.shape(acc)
             d = self.dimensions[j]
             cur_mask = np.array(aggregate_mask[pos : pos + d, :])
             cur_mask = np.reshape(cur_mask, cur_shape)
 
             # Cancel out the aggregate-mask to recover the aggregate-model
-            averaged_params[k] -= cur_mask
+            aggregate_finite[k] = np.mod(acc - cur_mask, p)
             pos += d
 
-        # Convert the model from finite to real
+        # Convert the model from finite to real and average ("do the avg after transform")
         logging.info("Server converts the aggregate_model from finite to tensor")
-        averaged_params = transform_finite_to_tensor(averaged_params, p, q_bits)
+        averaged_params = finite_aggregate_to_averaged_tensor(aggregate_finite, p, q_bits, len(active_clients_first_round))
 
         # update the global model which is cached at the server side
         self.set_global_model_params(averaged_params)
 
         end_time = time.time()
-        logging.info("aggregate time cost: %d" % (end_time - start_time))
-        return averaged_params
+        logging.info("aggregate time cost: %.3f s" % (end_time - start_time))
+        return aggregate_finite, averaged_params
 
     def client_sampling(self, round_idx, client_num_in_total, client_num_per_round):
         if client_num_in_total == client_num_per_round:
@@ -358,3 +307,4 @@ class LightVeriAggAggregator(object):
             #wandb.log({"Test/Loss": test_loss, "round": round_idx})
             stats = {"test_acc": test_acc, "test_loss": test_loss}
             logging.info(stats)
+            return stats

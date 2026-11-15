@@ -28,6 +28,9 @@ class ClientManager(Observer):
             HOST = "0.0.0.0"
             PORT = 50000 + rank
             self.com_manager = GRPCCommManager(HOST, PORT, ip_config_path=args.grpc_ipconfig_path, client_id=rank, client_num=size - 1)
+        elif backend == "SP":
+            # single process (server and all clients in one thread): `comm` is a LocalBus
+            self.com_manager = comm.endpoint(rank)
         else:
             self.com_manager = MpiCommunicationManager(comm, rank, size, node_type="client")
         self.com_manager.add_observer(self)
@@ -71,4 +74,6 @@ class ClientManager(Observer):
         elif self.backend == "MQTT":
             self.com_manager.stop_receive_message()
         elif self.backend == "GRPC":
+            self.com_manager.stop_receive_message()
+        elif self.backend == "SP":
             self.com_manager.stop_receive_message()

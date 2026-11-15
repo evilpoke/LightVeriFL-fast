@@ -5,17 +5,19 @@
 # TODO: use just one mask
 
 class MyMessage(object):
-    """
-    LightSecAgg Protocol:
+    r"""
+    LightSecAgg Protocol (+ LightVeriFL verification with an El Gamal commitment):
    -> 1 (server initializes the model parameters)    MSG_TYPE_S2C_INIT_CONFIG
 
    
    [Separate verification mask]
-   - client generates zv_i , generates [nv_i]_js , encode to [\tilde zv_i]_j
+   - client generates zv_i = (zh_i, zr_i):  zh_i a random EC point (masks the hash h_i),
+                                           zr_i a random integer in Z_n (masks the El Gamal randomness r_i; n = group order)
+   - generates T blindings [nv_i]_k (EC points resp. integers), encodes both with the (N, T+1) MDS code to [\tilde zv_i]_j = ([\tilde zh_i]_j, [\tilde zr_i]_j)
    -> 2 (client sends [\tilde zv_i]_j to other clients via server)            MSG_TYPE_C2S_SEND_VERI_ENCODED_MASK_TO_SERVER 
     
    [LightSeg mask]
-   -  gen z_i
+   -  gen z_i  (in F_p^d, padded to a multiple of U-T)
    -  gen [n_i]_j
    -  encode to [\tilde z_i]_j with z_i and [n_i]_ks
    -> 3 (clients send [\tilde z_i]_j encoded mask to other clients)          MSG_TYPE_C2S_SEND_ENCODED_MASK_TO_SERVER
@@ -24,19 +26,19 @@ class MyMessage(object):
    -> 12 SERVER: forward [\tilde zv_i]_j and [\tilde z_i]_j to j             MSG_TYPE_S2C_BOTH_ENCODED_MASK_TO_CLIENT_FWD
 
    [Training]
-   generate x
+   generate x  (quantized to F_p)
    
    [Veri Commit]
-   - the client generates h_i based on x_i
-   - the client randomly samples r_i
-   - the client generates commitment(h_i,r_i)
+   - the client generates h_i based on x_i         (h_i = sum_k x_i[k] g_k, x_i[k] read as signed integer, g_k hash-to-curve)
+   - the client randomly samples r_i in Z_n
+   - the client generates commitment(h_i,r_i)      (El Gamal: c_i = (r_i G, h_i + r_i H))
 
    -> 4 (client sends the commitment c_i to other clients via server)      MSG_TYPE_C2S_VERI_COMMITMENT_TO_SERVER
 
-   -> 13 SERVER: (forwards c_i to client i)                                MSG_TYPE_S2C_VERI_COMMITMENT_TO_CLIENT_FWD
+   -> 13 SERVER: (forwards c_i to every other client)                      MSG_TYPE_S2C_VERI_COMMITMENT_TO_CLIENT_FWD
    
-   [Veri Hash upload]
-   - generate \tilde h = h_i+zv_i and \tilde r = r_i+zv_i 
+   [Veri Hash upload]  (once all commitments are exchanged)
+   - generate \tilde h = h_i+zh_i (EC) and \tilde r = r_i+zr_i mod n
    -> 5 (client uploads \tilde r and \tilde h to server)                   MSG_TYPE_C2S_VERI_MASKED_HASH_R
                                                                             
    [LightSeg Finish]
@@ -54,25 +56,27 @@ class MyMessage(object):
 
         # TODO: introduce active_clients_third_round
 
-   - SERVER: Recover \sum z_i and then \sum x_i                                   
-   -> 9 (SERVER: Broadcast \sum x_i = y)                                   MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT 
+   - SERVER: Recover \sum z_i (from U of the messages) and then \sum x_i
+   -> 9 (SERVER: Broadcast \sum x_i = y in F_p; new global model = y / |U_1|)   MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT 
     
-   - U = U_1 (from lightsegacc)
+   - U = U_1 (from lightsegacc),  D = [N] \ U_1
 
-   - each client i \in U generates \sum_N [\tilde zv_j]_i     
+   - each client i \in U (that did not drop) generates \sum_N [\tilde zv_j]_i, split into
+     \sum_U [\tilde zv_j]_i (SURVIVING) and \sum_D [\tilde zv_j]_i (DROPPING)
    -> 10 (uploads \sum_N [\tilde zv_j]_i)                                  MSG_TYPE_C2S_VERI_SEND_MASK_TO_SERVER
 
-   - SERVER: recovers \sum zv_i , \sum h_i , \sum r_i 
+   - SERVER: recovers \sum zv_i (one-shot, from any T+1 of the messages), \sum h_i , \sum r_i   (for U and D)
    -> 11 SERVER: broadcasts \sum h_i and \sum r_i to users U               MSG_TYPE_S2C_SYNC_H_R_TO_CLIENT
 
    - each user in U checks: 
-      - COM(\sum h_i , \sum r_i ) =  \sum c_i
+      - COM(\sum h_i , \sum r_i ) =  \sum c_i          (for U and for D)
 
       
-      - \sum_i\in N: (h_i ^l)  =: "h^l"
+      - \sum_i\in U_1: (h_i ^l)  =: "h^l"
       - model in lth iteration: "y(l)"
+      - private random coefficient "\alpha_l" (veri_alpha_bits bits; 0 -> \alpha_l = 1)
       
-      in Lth iteration
+      in Lth iteration (every veri_batch_size rounds and in the last round)
       - \sum_l \in L:  \alpha_l h^l == hash( \sum \alpha_l y(l) )
 
 
@@ -138,7 +142,7 @@ class MyMessage(object):
 
 
 # this will use segagg for aggregation and LightVeriFL for verification
-"""
+r"""
 class MyMessage(object):
     #
     LightSecAgg Protocol:

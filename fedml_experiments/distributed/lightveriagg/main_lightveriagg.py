@@ -51,7 +51,8 @@ from fedml_api.model.linear.lr import LogisticRegression
 from fedml_api.model.cv.mobilenet_v3 import MobileNetV3
 from fedml_api.model.cv.efficientnet import EfficientNet
 
-from fedml_api.distributed.lightveriagg.LightVeriAggAPI import FedML_init, FedML_lightveriagg_distributed
+from fedml_api.distributed.lightveriagg.LightVeriAggAPI import FedML_init, FedML_lightveriagg_distributed, \
+    FedML_lightveriagg_single_process
 INJECT_BASE_PORT = 5678
 
 
@@ -139,6 +140,23 @@ def add_args(parser):
     parser.add_argument("--prime_number", type=int, default=2 ** 31 - 1, help="prime_number")
 
     parser.add_argument("--precision_parameter", type=int, default=10, help="precision_parameter")
+
+    # verification (LightVeriFL with El Gamal commitment)
+    parser.add_argument("--veri_batch_size", type=int, default=10,
+                        help="L: amortized verification, the aggregations of the last L rounds are checked at once")
+    parser.add_argument("--veri_alpha_bits", type=int, default=64,
+                        help="bits of the private random coefficients alpha_l of the batch check (0: alpha_l = 1)")
+    parser.add_argument("--veri_dropout_rate", type=float, default=0.0,
+                        help="simulated fraction of U_1 that drops during the verification phase of every round")
+    parser.add_argument("--veri_dropout_seed", type=int, default=0, help="seed of the simulated verification dropouts")
+
+    # single process mode + benchmarking
+    parser.add_argument("--single_process", type=int, default=0,
+                        help="1: server and all clients in ONE process (no MPI); benchmarks communication + computation")
+    parser.add_argument("--results_dir", type=str, default="./results", help="output directory (model, benchmark)")
+    parser.add_argument("--bench_name", type=str, default="lightveriagg", help="name of the benchmark run")
+    parser.add_argument("--uplink_mbps", type=float, default=10.0, help="uplink bandwidth for the latency estimate")
+    parser.add_argument("--downlink_mbps", type=float, default=50.0, help="downlink bandwidth for the latency estimate")
 
     args = parser.parse_args()
     return args
@@ -371,9 +389,11 @@ def create_model(args, model_name, output_dim):
     model = None
     if model_name == "lr" and args.dataset == "mnist":
         logging.info("LogisticRegression + MNIST")
-    if model_name == "lr" and args.dataset == "cifar10":
-        logging.info("LogisticRegression + cirar10")
         model = LogisticRegression(28 * 28, output_dim)
+    elif model_name == "lr" and args.dataset == "cifar10":
+        logging.info("LogisticRegression + cirar10")
+        # CIFAR-10 images are 3 x 32 x 32: flatten them for the linear model
+        model = torch.nn.Sequential(torch.nn.Flatten(), LogisticRegression(3 * 32 * 32, output_dim))
     elif model_name == "rnn" and args.dataset == "shakespeare":
         logging.info("RNN + shakespeare")
         model = RNN_OriginalFedAvg()
@@ -505,11 +525,29 @@ if __name__ == "__main__":
     # In this case, please use our FedML distributed version (./fedml_experiments/distributed_fedavg)
     model = create_model(args, model_name=args.model, output_dim=dataset[7])
     #comm.Barrier()  # barrier is at fault 
-    print("testing")
-    try:
-        if args.client_num_per_round > args.targeted_number_active_clients:
-            args.targeted_number_active_clients = args.client_num_per_round
+    if args.client_num_per_round > args.targeted_number_active_clients:
+        args.targeted_number_active_clients = args.client_num_per_round
+    if args.targeted_number_active_clients > args.client_num_per_round:
+        args.targeted_number_active_clients = args.client_num_per_round
+    assert 0 <= args.privacy_guarantee < args.targeted_number_active_clients, \
+        "LightSecAgg/LightVeriFL need T < U <= N (T = privacy_guarantee, U = targeted_number_active_clients)"
 
+    if args.single_process == 1:
+        # server + all clients in this one process; benchmark of communication and computation
+        result = FedML_lightveriagg_single_process(
+            device,
+            model,
+            train_data_num,
+            train_data_global,
+            test_data_global,
+            train_data_local_num_dict,
+            train_data_local_dict,
+            test_data_local_dict,
+            args,
+        )
+        sys.exit(0 if result["summary"]["all_rounds_verified"] else 1)
+
+    try:
         # start "federated averaging (LightSecAgg)"
         FedML_lightveriagg_distributed(
             process_id,

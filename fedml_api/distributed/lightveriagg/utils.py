@@ -8,10 +8,37 @@ import torch
 
 
 def save_model_dict_to_pickle(path, weights):
-    pickle.dump(path, weights)
+    with open(path, "wb") as fh:
+        pickle.dump(weights, fh)
 
 def load_model_dict_from_pickle(path):
-    return pickle.load(path)
+    with open(path, "rb") as fh:
+        return pickle.load(fh)
+
+
+def finite_to_signed(X_q, p):
+    """Centered lift of field elements of F_p: [0, p) -> (-(p-1)/2, (p-1)/2] (int64).
+
+    This is the integer a quantized value encodes (same convention as my_q_inv). The linearly
+    homomorphic EC hash is applied to these integers, so that h(y) = sum_i h(x_i) holds for the
+    aggregate y = sum_i x_i mod p as long as the real-valued aggregate does not overflow the field.
+    """
+    X_q = np.asarray(X_q, dtype=np.int64)
+    return np.where(X_q > (p - 1) // 2, X_q - p, X_q)
+
+
+def flatten_finite_model(model_params, p):
+    """Model dict in F_p (state_dict key order) -> one signed int64 vector of length d."""
+    return np.concatenate([finite_to_signed(np.asarray(model_params[k]).reshape(-1), p) for k in model_params.keys()])
+
+
+def finite_aggregate_to_averaged_tensor(aggregate_finite, p, q_bits, num_aggregated):
+    """sum_i x_i in F_p  ->  real-valued average model (dict of float tensors)."""
+    out = dict()
+    for k in aggregate_finite.keys():
+        tmp_real = my_q_inv(np.asarray(aggregate_finite[k], dtype=np.int64), q_bits, p) / float(num_aggregated)
+        out[k] = torch.as_tensor(np.asarray(tmp_real), dtype=torch.float32)
+    return out
 
 
 def model_dimension(weights):
@@ -29,7 +56,8 @@ def model_dimension(weights):
 
 def transform_tensor_to_finite(model_params, p, q_bits):
     for k in model_params.keys():
-        tmp = np.array(model_params[k])
+        v = model_params[k]
+        tmp = v.detach().cpu().numpy() if isinstance(v, torch.Tensor) else np.array(v)
         tmp_finite = my_q(tmp, q_bits, p)
         model_params[k] = tmp_finite
     return model_params
@@ -77,35 +105,20 @@ def post_complete_message_to_sweep_process(args):
 
 
 def modular_inv(a, p):
-    x, y, m = 1, 0, p
-    while a > 1:
-        q = a // m
-        t = m
-
-        m = np.mod(a, m)
-        a = t
-        t = y
-
-        y, x = x - np.int64(q) * np.int64(y), t
-
-        if x < 0:
-            x = np.mod(x, p)
-    return np.mod(x, p)
+    # exact Python-int arithmetic: works for the small model field (2^31-1) as well as for the
+    # 256-bit group order of P-256 (numpy int64 overflowed there: "Python int too large to convert to C long")
+    return pow(int(a) % int(p), -1, int(p))
 
 
 def divmod(_num, _den, _p):
     # compute num / den modulo prime p
-    _num = np.mod(_num, _p)
-    _den = np.mod(_den, _p)
-    _inv = modular_inv(_den, _p)
-    return np.mod(np.int64(_num) * np.int64(_inv), _p)
+    return (int(_num) % int(_p)) * modular_inv(_den, _p) % int(_p)
 
 
 def PI(vals, p):  # upper-case PI -- product of inputs
     accum = 1
     for v in vals:
-        tmp = np.mod(v, p)
-        accum = np.mod(accum * tmp, p)
+        accum = (accum * (int(v) % int(p))) % int(p)
     return accum
 
 

@@ -1,19 +1,30 @@
+import copy
 import logging
 import os
 import pickle
 import sys
 
 from fastecdsa.curve import P256
-from fedml_api.distributed.utils.EC import LightVeriFL_enc_EC, PI_addEC, generate_Pedersen_commitment, generate_hash, generate_point_EC
+from fedml_api.distributed.utils.EC import LightVeriFL_enc_EC, LightVeriFL_enc_scalar, PI_addEC, \
+    aggregate_el_gamal_commitments, compute_elgamal_commitment_to_hash_randomness, curve_n, ec_add, ec_mul, \
+    elgamal_commitments_equal, generate_point_EC, get_hash_bases, hash_vector, random_scalar, veri_eval_points
+from fedml_api.distributed.utils.bench import timer
 import numpy as np
+import secrets
 import time
 from fedml_core.distributed.communication.message import Message
 from fedml_core.distributed.client.client_manager import ClientManager
 from .message_define import MyMessage
-from .utils import transform_list_to_tensor, transform_tensor_to_finite
+from .utils import transform_list_to_tensor, transform_tensor_to_finite, flatten_finite_model, \
+    finite_aggregate_to_averaged_tensor
 from .utils import model_dimension
-from .mpc_function import model_masking, mask_encoding, compute_aggregate_encoded_mask
-from fastecdsa.point import Point
+from .mpc_function import model_masking, mask_encoding, compute_aggregate_encoded_mask, padded_dimension, \
+    random_field_array, verification_dropouts
+
+
+class VerificationError(Exception):
+    """Raised (single-process mode) / logged (MPI) when a client detects a forged aggregation."""
+
 
 class LightVeriAggClientManager(ClientManager):
     def __init__(self, args, trainer, comm=None, rank=0, size=0, backend="MPI"):
@@ -25,7 +36,6 @@ class LightVeriAggClientManager(ClientManager):
         self.encoded_mask_dict = dict()
         self.flag_encoded_mask_dict = dict()
         self.worker_num = size - 1
-        self.timing_measurements = dict()
         self.dimensions = []
         self.total_dimension = None                     # is initialized with the model init
         for idx in range(self.worker_num):
@@ -37,22 +47,34 @@ class LightVeriAggClientManager(ClientManager):
         self.privacy_guarantee = args.privacy_guarantee
         self.prime_number = args.prime_number
         self.precision_parameter = args.precision_parameter
-        self.encoded_veri_mask_dict = {}
 
         # verification
-        self.alpha = np.zeros((1,), dtype=int)  # TODO: this can only be wrong
-        self.agg_client_hashes_epochs = [0]*self.num_rounds
         self.N = self.size - 1
-        self.stored_model = None
-        self.hz = None
-        self.rz = None
-        self.all_commmitments = [0]*self.N
+        self.client_idx = self.rank - 1                 # 0-based index of this client (= position in U_1 lists)
+        self.hash_bases = None
+        self.stored_model = None                        # x_i in F_p (dict) of the current round
+        self.hz = None                                  # masked hash        h_i + zh_i   (EC point)
+        self.rz = None                                  # masked randomness  r_i + zr_i   (in Z_n)
+        self.local_veri_mask = None                     # (zh_i, zr_i): EC point mask of h_i, integer mask of r_i
+        self.all_commmitments = dict()                  # client index -> El Gamal commitment (c1, c2)
         self.encoded_veri_mask_dict = dict()
         self.flag_encoded_veri_mask_dict = dict()
+        for idx in range(self.worker_num):
+            self.flag_encoded_veri_mask_dict[idx] = False
         self.local_sample_num = -1
-        self.check_second_veri_every_amount = self.num_rounds
-        self.locally_accumulated_model = None
-        self.agg_client_hashes_epochs_complete = self.num_rounds*[0]
+        self.active_clients_first_round = []
+        self.received_aggregate = None                  # y = sum_{U_1} x_j in F_p (dict)
+        self.uploaded_this_round = False
+        self.veri_dropout_this_round = False
+
+        # amortized verification: users check the aggregations of the last L rounds at once
+        self.check_second_veri_every_amount = max(1, int(getattr(args, "veri_batch_size", self.num_rounds)))
+        self.veri_alpha_bits = int(getattr(args, "veri_alpha_bits", 64))
+        self.veri_dropout_rate = float(getattr(args, "veri_dropout_rate", 0.0))
+        self.veri_dropout_seed = int(getattr(args, "veri_dropout_seed", 0))
+        self.batch_buffer = []                          # [(round, alpha_l, y(l) signed, h^l)]
+        self.verification_log = []                      # per round: what this client verified
+        self.verification_failed = False
 
 
     def run(self):
@@ -62,9 +84,9 @@ class LightVeriAggClientManager(ClientManager):
 
 
         #    - client generates zv_i , generates [nv_i]_js , encode to [\tilde zv_i]_j
-        #   -> 2 client sends [\tilde zv_i]_j to other clients    
-        
-        
+        #   -> 2 client sends [\tilde zv_i]_j to other clients
+
+
 
         # - receive model params from server
         # - feed the model parameters into the local model
@@ -82,7 +104,7 @@ class LightVeriAggClientManager(ClientManager):
             MyMessage.MSG_TYPE_S2C_VERI_COMMITMENT_TO_CLIENT_FWD, self.handle_message_vericomfrwd
         )
 
-        # quantize the model 
+        # quantize the model
         # some internal logic checks
         # send x+z to server
         self.register_message_receive_handler(
@@ -92,7 +114,7 @@ class LightVeriAggClientManager(ClientManager):
 
         # We receive from the server the current global model
         # We then load in the current global model
-        # We trade with all other clients directly \tilde z_ij  (self.__offline() ) 
+        # We trade with all other clients directly \tilde z_ij  (self.__offline() )
         self.register_message_receive_handler(
             MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT, self.handle_message_receive_model_from_server
         )
@@ -107,41 +129,38 @@ class LightVeriAggClientManager(ClientManager):
 
 
     def handle_message_vericomfrwd(self, msg_params):
-        logging.info("client %d handle_message_vericomfrwd from server." % self.get_sender_id())
-        commitment_from_client =      msg_params.get(MyMessage.MSG_ARG_KEY_COMMITMENT)
+        # 13: commitment c_j of client j (forwarded by the server)
+        commitment_from_client = msg_params.get(MyMessage.MSG_ARG_KEY_COMMITMENT)
         client_id = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_ID)
         self.add_commitment(client_id - 1, commitment_from_client)
-        b_all_received = self.flag_commitment_dict()
-        if b_all_received:
-            logging.info("client %d has received all commitments" % self.get_sender_id())
+        self.upload_masked_inputs_if_ready()
 
-            # now uploading masked hash and masked randomness
-            t0 = time.time()
-            self.send_veri_masked_hash_randomness()
-            t1 = time.time()
-            self.timing_measurements["handle_message_vericomfrwd: sending hz and rz"] = t1-t0
+    def upload_masked_inputs_if_ready(self):
+        # Once every commitment has been exchanged (and the own one is computed):
+        #   -> 5 upload \tilde h_i, \tilde r_i      -> 6 upload \tilde x_i = x_i + z_i
+        if self.uploaded_this_round or self.stored_model is None or not self.check_whether_all_commitments_receive():
+            return
+        self.uploaded_this_round = True
+        logging.info("client %d has received all commitments" % self.get_sender_id())
 
-            # Mask the local model
-            t0 = time.time()
-            weights_finite = self.stored_model
+        # now uploading masked hash and masked randomness
+        self.send_veri_masked_hash_randomness()
+
+        # Mask the local model
+        with timer("client: [A.2] mask model x_i + z_i", who=self.rank, rnd=self.round_idx):
+            weights_finite = copy.deepcopy(self.stored_model)
             masked_weights = model_masking(weights_finite, self.dimensions, self.local_mask, self.prime_number)
-            t1 = time.time()
-            self.timing_measurements["handle_message_vericomfrwd: masking model with x_i + z_i"] = t1-t0
 
-            if self.local_sample_num == -1:
-                raise Exception("No training has happened yet.")
+        if self.local_sample_num == -1:
+            raise Exception("No training has happened yet.")
 
-            t0 = time.time()
-            self.send_model_to_server(0, masked_weights, self.local_sample_num)
-            t1 = time.time()
-            self.timing_measurements["handle_message_vericomfrwd: sending masked model to server"] = t1-t0
-            
+        self.send_model_to_server(0, masked_weights, self.local_sample_num)
+
 
     def handle_message_init(self, msg_params):
         # gets initial global model from the federator
         logging.info("client %d handle_message_init from server." % self.get_sender_id())
 
-        t0 = time.time()
         global_model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
         if self.args.is_mobile == 1:
@@ -149,262 +168,214 @@ class LightVeriAggClientManager(ClientManager):
 
         # inits new model by these new global params
         self.dimensions, self.total_dimension = model_dimension(global_model_params)
-        self.alpha = np.zeros((self.total_dimension,), dtype=int)
-        t1 = time.time()
-        self.timing_measurements["handle_message_init: Quantisation"] = t1-t0
+        # public parameters of the hash (deterministic, identical at every party, computed once per process)
+        t0 = time.time()
+        self.hash_bases = get_hash_bases(self.total_dimension)
+        logging.info("client %d: hash bases g_1..g_%d ready (%.2f s, one-time setup)"
+                     % (self.get_sender_id(), self.total_dimension, time.time() - t0))
 
         # updates the model
-        t0 = time.time()
         self.trainer.update_model(global_model_params)
-        # TODO ???
         self.trainer.update_dataset(int(client_index))
-        t1 = time.time()
-        self.timing_measurements["handle_message_init: Updating model and dataset"] = t1-t0
 
-        # TODO :??
         self.round_idx = 0
         self.__offline()
 
 
     def handle_message_receive_encoded_mask_from_server(self, msg_params):
-        
+        # 12: [\tilde zv_j]_i and [\tilde z_j]_i of client j
         encoded_mask = msg_params.get(MyMessage.MSG_ARG_KEY_ENCODED_MASK)
         encoded_veri_mask = msg_params.get(MyMessage.MSG_ARG_KEY_VERI_ENCODED_MASK)
 
         client_id = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_ID)
-        logging.info(
-            "Client %d receive encoded_mask = %s from Client %d" % (self.get_sender_id(), encoded_mask, client_id)
-        )
+        logging.debug("Client %d receive encoded masks from Client %d" % (self.get_sender_id(), client_id))
         self.add_encoded_mask(client_id - 1, encoded_mask)
         self.add_encoded_veri_mask(client_id-1, encoded_veri_mask)
         b_all_received = self.check_whether_all_encoded_mask_receive()
         if b_all_received:
-            t0 = time.time()
-            # train, QUANTISATION , masking , sending
-            x = self.__train()
-            t1 = time.time()
-            self.timing_measurements["handle_message_receive_encoded_mask_from_server: actual training"] = t1-t0
+            # [Training]
+            with timer("client: [A.2] local training", who=self.rank, rnd=self.round_idx):
+                x = self.__train()
 
-            # store x
+            # store x (in F_p)
             self.stored_model = x
-            t0 = time.time()
-            # generate hash based on x (and randomness)
-            h = generate_hash(x,  self.alpha, self.total_dimension)
-            t1 = time.time()
-            self.timing_measurements["handle_message_receive_encoded_mask_from_server: generating h_i"] = t1-t0
 
-            t0 = time.time()
-            Pedersen_noise = generate_point_EC()
+            # [Veri Commit]: h_i = H(x_i), r_i <- Z_n, c_i = (r_i G, h_i + r_i H)
+            with timer("client: [A.2] hash h_i = H(x_i)", who=self.rank, rnd=self.round_idx):
+                h = hash_vector(flatten_finite_model(x, self.prime_number), self.hash_bases)
 
-            # masking the hash and randomness
-            self.hz = h + self.local_veri_mask
-            self.rz = Pedersen_noise + self.local_veri_mask
-            t1 = time.time()
-            self.timing_measurements["handle_message_receive_encoded_mask_from_server: masking h_i and r_i"] = t1-t0
+            with timer("client: [A.2] El Gamal commitment c_i", who=self.rank, rnd=self.round_idx):
+                randomness = random_scalar()
+                commitment = compute_elgamal_commitment_to_hash_randomness(h, randomness)
 
-            # create commitment
-            t0 = time.time()
+            # masking the hash (EC point mask) and the randomness (separate integer mask in Z_n)
+            with timer("client: [A.2] mask h_i and r_i", who=self.rank, rnd=self.round_idx):
+                zh, zr = self.local_veri_mask
+                self.hz = ec_add(h, zh)
+                self.rz = (randomness + zr) % curve_n
 
-            Pedersen_coeff = np.zeros((2,), dtype=int)
-            curve_g = Point(P256.gx, P256.gy, curve=P256)
-
-            Pedersen_g = (Pedersen_coeff[0] * curve_g)
-            Pedersen_l = (Pedersen_coeff[1] * curve_g)
-            commitment = generate_Pedersen_commitment(h, Pedersen_g, Pedersen_l, Pedersen_noise)            
-            self.all_commmitments[self.get_sender_id] = h
-            t1 = time.time()
-            self.timing_measurements["handle_message_receive_encoded_mask_from_server: generating commit and storing"] = t1-t0
-
+            self.add_commitment(self.client_idx, commitment)
 
             # send commitment to server for broadcast
-            t0 = time.time()
             self.send_veri_commitment(commitment)
-            t1 = time.time()
-            self.timing_measurements["handle_message_receive_encoded_mask_from_server: sending commit to other clients"] = t1-t0
 
-            """        NOPE below!
-            for receive_id in range(1, self.size):
-                encoded_mask = encoded_mask_set[receive_id - 1]
-                encoded_veri_mask = encoded_veri_mask_set[receive_id - 1]
-                if receive_id != self.get_sender_id():
-
-                    self.send_veri_encoded_mask_to_server(receive_id, encoded_veri_mask) # MSG_TYPE_C2S_SEND_ENCODED_MASK_TO_SERVER
-                    self.send_encoded_mask_to_server(receive_id, encoded_mask)
-
-                else:
-                    self.encoded_mask_dict[receive_id - 1] = encoded_mask
-                    self.flag_encoded_mask_dict[receive_id - 1] = True
+            # all other commitments might already be here
+            self.upload_masked_inputs_if_ready()
 
 
-            :"""
-
-    
 
     def handle_message_hash_randomess_aggreg(self, msg_params):
         # ----------------
-        # - Get hash and random agg from server.
-        # - checking the integrity of aggregation
-        # - Starting the new round, beginning with    
+        # 11: sum_U h, sum_D h, sum_U r, sum_D r (U = U_1, D = [N] \ U_1) reconstructed by the server
+        # - checking the integrity of the reconstruction (commitments) and of the aggregation (batch check)
+        # - Starting the new round, beginning with
         #    [Separate verification mask]
         #       - client generates zv_i , generates [nv_i]_js , encode to [\tilde zv_i]_j
-        #       -> 2 (client sends [\tilde zv_i]_j to other clients via server)            MSG_TYPE_C2S_SEND_VERI_ENCODED_MASK_TO_SERVER 
+        #       -> 3 (client sends [\tilde zv_i]_j to other clients via server)            MSG_TYPE_C2S_SEND_VERI_ENCODED_MASK_TO_SERVER
         # ----------------
-        t0 = time.time()
-        N = self.size - 1
         logging.info("client %d handle_message_hash_randomess_aggreg." % self.get_sender_id())
         aggregate_hash_U = msg_params.get(MyMessage.MSG_ARG_KEY_AGGREGATE_HASH_FOR_U)
         aggregate_hash_D = msg_params.get(MyMessage.MSG_ARG_KEY_AGGREGATE_HASH_FOR_D)
         aggregate_rnd_U = msg_params.get(MyMessage.MSG_ARG_KEY_AGGREGATE_RND_FOR_U)
         aggregate_rnd_D = msg_params.get(MyMessage.MSG_ARG_KEY_AGGREGATE_RND_FOR_D)
-        client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
-        
-        
-        self.current_i_trial += 1
-        self.agg_client_hashes_epochs_U[self.current_i_trial] = aggregate_hash_U
 
-        self.agg_client_hashes_epochs_complete[self.current_i_trial] = aggregate_hash_U + aggregate_hash_D
-        t1 = time.time()
-        self.timing_measurements["handle_message_hash_randomess_aggreg: receiving and adding and storing hashes"] = t1-t0
-
-        t0 = time.time()
-        Pedersen_coeff = np.zeros((2,), dtype=int)
-        curve_g = Point(P256.gx, P256.gy, curve=P256)
-        
-        Pedersen_g = (Pedersen_coeff[0] * curve_g)
-        Pedersen_l = (Pedersen_coeff[1] * curve_g)
-        self_commitments_agg_U = generate_Pedersen_commitment(aggregate_hash_U, Pedersen_g, Pedersen_l, aggregate_rnd_U)
-        self_commitments_agg_D = generate_Pedersen_commitment(aggregate_hash_D, Pedersen_g, Pedersen_l, aggregate_rnd_D)
-
-        # actually summing up the commitments
-        #self.local_sample_num
-        
-        surviving_commitments = []
-        non_surviving_commitments = []
-        for i in range(self.size):
-            if i in self.active_clients_first_round:
-                surviving_commitments.append(self.all_commmitments[i])
-            else:
-                non_surviving_commitments.append(self.all_commmitments[i])
-
-        commitments_summed = PI_addEC(surviving_commitments)
-        commitments_summed = (commitments_summed + (-(N - 1) * (Pedersen_g + Pedersen_l)))
-        if self_commitments_agg_U == commitments_summed:
+        record = {"round": self.round_idx, "client": self.client_idx, "dropped_in_verification": self.veri_dropout_this_round}
+        if not self.veri_dropout_this_round:
+            # [Round V.0] COM(sum h_i, sum r_i) == sum c_i   (separately for U and D)
+            with timer("client: [V.0] verify commitments", who=self.rank, rnd=self.round_idx):
+                surviving = sorted(self.active_clients_first_round)
+                non_surviving = [i for i in range(self.N) if i not in surviving and i in self.all_commmitments]
+                commitments_summed_U = aggregate_el_gamal_commitments([self.all_commmitments[i] for i in surviving])
+                commitments_summed_D = aggregate_el_gamal_commitments([self.all_commmitments[i] for i in non_surviving])
+                ok_U = elgamal_commitments_equal(
+                    compute_elgamal_commitment_to_hash_randomness(aggregate_hash_U, aggregate_rnd_U), commitments_summed_U)
+                ok_D = elgamal_commitments_equal(
+                    compute_elgamal_commitment_to_hash_randomness(aggregate_hash_D, aggregate_rnd_D), commitments_summed_D)
+            record["commitments_ok"] = bool(ok_U and ok_D)
+            if not (ok_U and ok_D):
+                self.verification_log.append(record)
+                self.forged("Forged reconstruction of the aggregate hash/randomness at the server "
+                            "(commitment check failed, U: %s, D: %s)" % (ok_U, ok_D))
+                return
             logging.info("client %d confirmed correct commit aggregation" % self.get_sender_id())
-        else:
-            logging.info("error")
-            exit(1)
-            
-        commitments_summed = PI_addEC(non_surviving_commitments)
-        commitments_summed = (commitments_summed + (-(N - 1) * (Pedersen_g + Pedersen_l)))
-        if self_commitments_agg_D == commitments_summed:
-            logging.info("client %d confirmed correct commit aggregation" % self.get_sender_id())
-        else:
-            logging.info("error")
-            exit(1)
-        t1 = time.time()
-        self.timing_measurements["handle_message_hash_randomess_aggreg: commitments verified"] = t1-t0
-        
-        if self.round_idx % self.check_second_veri_every_amount == 0:
-            t0 = time.time()
-            h_agg = generate_hash(self.locally_accumulated_model)
-            #h_agg = generate_hash([sum(x) for x in zip(*server_agg_gradient_epochs)], alpha, d)
-            
-            
-            h_blindly_added = PI_addEC(self.agg_client_hashes_epochs_complete)
 
-            if h_agg == h_blindly_added:
-                logging.info("client %d confirmed correct hash aggregation" % self.get_sender_id())
-            else:
-                logging.info("error")
-                exit(1)
-            t1 = time.time()
-            self.timing_measurements["handle_message_hash_randomess_aggreg: aggregate model verified"] = t1-t0
+            # store y(l) and h^l = sum_{i in U_1} h_i for the amortized check with a private random alpha_l
+            alpha_l = 1 if self.veri_alpha_bits <= 0 else 1 + secrets.randbits(self.veri_alpha_bits)
+            y_signed = flatten_finite_model(self.received_aggregate, self.prime_number)
+            self.batch_buffer.append((self.round_idx, alpha_l, y_signed, aggregate_hash_U))
 
-        # Collecting timing data
-        time_out = []
-        time_out.append(self.timing_measurements)
-        path = "./results/LightVeriSecFL_client_" + str(self.get_sender_id()) + "_round_" + str(self.round_idx) + "_L_"+str(self.check_second_veri_every_amount)+"_N_"+str(self.size) 
-        pickle.dump(time_out, open(path, 'wb'), -1)
-        self.timing_measurements = dict()
-        
-        # Restarting to the next round. Note that the federator might have already terminated the training 
+            last_round = self.round_idx == self.num_rounds - 1
+            if (self.round_idx + 1) % self.check_second_veri_every_amount == 0 or last_round:
+                # [Round V.1] batch checking: h(sum_l alpha_l y(l)) == sum_l alpha_l h^l
+                with timer("client: [V.1] batch check h(sum a_l y(l)) == sum a_l h^l", who=self.rank, rnd=self.round_idx):
+                    combined_model = sum(y.astype(object) * a for (_, a, y, _) in self.batch_buffer)
+                    h_agg = hash_vector(combined_model, self.hash_bases)
+                    h_blindly_added = PI_addEC([ec_mul(a, h_l) for (_, a, _, h_l) in self.batch_buffer])
+                    ok = h_agg == h_blindly_added
+                checked_rounds = [r for (r, _, _, _) in self.batch_buffer]
+                record["batch_checked_rounds"] = checked_rounds
+                record["batch_ok"] = bool(ok)
+                self.batch_buffer = []
+                if not ok:
+                    self.verification_log.append(record)
+                    self.forged("Forged aggregation: hash of the aggregate models of rounds %s does not match" % checked_rounds)
+                    return
+                logging.info("client %d confirmed correct aggregation of rounds %s" % (self.get_sender_id(), checked_rounds))
+        else:
+            logging.info("client %d dropped in the verification of round %d (simulated)" % (self.get_sender_id(), self.round_idx))
+        self.verification_log.append(record)
+
+        # Restarting to the next round.
+        self.round_idx += 1
+        self.reset_round_state()
         if self.round_idx == self.num_rounds:
-            time.sleep(5)
-            exit(0)
+            logging.info("client %d has finished the training and the verification!" % self.get_sender_id())
+            self.finish_protocol()
+            return
         logging.info("client %d starts a new FL round..." % self.get_sender_id())
         self.__offline()
 
-        
-        
+
+    def forged(self, reason):
+        # the client regards the result as forged and stops (as the former exit(1))
+        logging.error("client %d: %s" % (self.get_sender_id(), reason))
+        self.verification_failed = True
+        if self.backend == "MPI":
+            self.finish()
+        raise VerificationError(reason)
+
+    def finish_protocol(self):
+        if self.backend == "MPI":
+            from mpi4py import MPI
+            MPI.COMM_WORLD.Barrier()  # the server waits here until every client has verified the last round
+            self.finish()
+
+
+    def reset_round_state(self):
+        self.stored_model = None
+        self.hz = None
+        self.rz = None
+        self.all_commmitments = dict()
+        self.uploaded_this_round = False
+        self.received_aggregate = None
+        self.veri_dropout_this_round = False
+
 
     def handle_message_receive_model_from_server(self, msg_params):
         # ----------------
-        # Get the model update from the server
+        # 9: y = sum_{U_1} x_j (in F_p) from the server
         # ----------------
-        
-        t0 = time.time()
         logging.info("client %d handle_message_receive_model_from_server." % self.get_sender_id())
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         client_index = msg_params.get(MyMessage.MSG_ARG_KEY_CLIENT_INDEX)
-        t1 = time.time()
-        self.timing_measurements["handle_message_receive_model_from_server: receiving model"] = t1-t0
 
-        t0 = time.time()
-        if self.args.is_mobile == 1:
-            model_params = transform_list_to_tensor(model_params)
+        with timer("client: update local model with y / |U_1|", who=self.rank, rnd=self.round_idx):
+            self.received_aggregate = {k: np.asarray(v, dtype=np.int64) for k, v in model_params.items()}
+            global_model_params = finite_aggregate_to_averaged_tensor(
+                self.received_aggregate, self.prime_number, self.precision_parameter, len(self.active_clients_first_round))
 
-        # training update the local model
-        self.trainer.update_model(model_params)
-        
-        # TODO ??
-        self.trainer.update_dataset(int(client_index))
-        self.round_idx += 1
+            # training update the local model
+            self.trainer.update_model(global_model_params)
+            self.trainer.update_dataset(int(client_index))
 
-        # masking and then sending just the mask. NOT THE ACTUAL MASKED MODEL!!
-        #self.__offline() NOT HERE!!!
+        # U = U_1 (from lightsecagg); D = [N] \ U_1
+        dropped = verification_dropouts(self.round_idx, self.active_clients_first_round, self.veri_dropout_rate,
+                                        self.privacy_guarantee, self.veri_dropout_seed)
+        self.veri_dropout_this_round = self.client_idx in dropped
+        if self.veri_dropout_this_round:
+            return
 
-        if self.round_idx == self.num_rounds - 1:
-            logging.info("this client has finished the training!")
+        # sending the aggregated veri masks for resolving
+        with timer("client: [V.0] aggregate encoded verification masks", who=self.rank, rnd=self.round_idx):
+            surviving = sorted(self.active_clients_first_round)
+            non_surviving = [i for i in range(self.N) if i not in surviving and i in self.encoded_veri_mask_dict]
+            aggregate_veri_mask_U = self.aggregate_encoded_veri_masks(surviving)
+            aggregate_veri_mask_D = self.aggregate_encoded_veri_masks(non_surviving)
 
-        t1 = time.time()
-        self.timing_measurements["handle_message_receive_model_from_server: mobile, updating model, dataset"] = t1-t0
+        self.send_veri_aggregate_mask(0, aggregate_veri_mask_U, aggregate_veri_mask_D)
 
-        # sending the veri mask for resolving
-        
-        t0 = time.time()
-        aggregate_veri_mask = compute_aggregate_encoded_mask(self.encoded_veri_mask_dict, self.prime_number, self.active_clients_first_round)
-        t1 = time.time()
-        self.timing_measurements["handle_message_receive_model_from_server: generating aggregate sum: [z_i]j"] = t1-t0
-
-        t0 = time.time()
-        self.send_veri_aggregate_mask(0, aggregate_veri_mask)
-        t1 = time.time()
-        self.timing_measurements["handle_message_receive_model_from_server: sending aggregate sum: [z_i]j"] = t1-t0
+    def aggregate_encoded_veri_masks(self, clients):
+        # sum_j [\tilde zh_j]_i (EC points) and sum_j [\tilde zr_j]_i (integers mod n)
+        return (PI_addEC([self.encoded_veri_mask_dict[j][0] for j in clients]),
+                sum(int(self.encoded_veri_mask_dict[j][1]) for j in clients) % curve_n)
 
 
     def handle_message_receive_active_from_server(self, msg_params):
-        # sending the mask
-        
-        sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
+        # 7: U_1 -> 8: sum_{j in U_1} [\tilde z_j]_i
         # Receive the set of active client id in first round
         active_clients_first_round = msg_params.get(MyMessage.MSG_ARG_KEY_ACTIVE_CLIENTS)
-        self.active_clients_first_round = active_clients_first_round
+        self.active_clients_first_round = list(active_clients_first_round)
         logging.info(
             "Client %d receive active_clients in the first round = %s"
             % (self.get_sender_id(), active_clients_first_round)
         )
-        t0 = time.time()
         # Compute the aggregate of encoded masks for the active clients
-        p = self.prime_number
-        aggregate_encoded_mask = compute_aggregate_encoded_mask(self.encoded_mask_dict, p, active_clients_first_round)
-        t1 = time.time()
-        self.timing_measurements["handle_message_receive_active_from_server: compute the aggregate sum z_ij for active clients"] = t1-t0
+        with timer("client: [A.3] aggregate encoded masks (LightSecAgg)", who=self.rank, rnd=self.round_idx):
+            p = self.prime_number
+            aggregate_encoded_mask = compute_aggregate_encoded_mask(self.encoded_mask_dict, p, active_clients_first_round)
 
         # Send the aggregate of encoded mask to server
-        t0 = time.time()
         self.send_aggregate_encoded_mask_to_server(0, aggregate_encoded_mask)
-        t1 = time.time()
-        self.timing_measurements["handle_message_receive_active_from_server: sending the aggregate sum z_ij"] = t1-t0
 
     def send_model_to_server(self, receive_id, weights, local_sample_num):
         message = Message(MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER, self.get_sender_id(), receive_id)
@@ -413,11 +384,11 @@ class LightVeriAggClientManager(ClientManager):
         self.send_message(message)
 
     def send_veri_commitment(self, commitment):
-
+        # one upload; the server forwards c_i to every other client
         message = Message(MyMessage.MSG_TYPE_C2S_VERI_COMMITMENT_TO_SERVER, self.get_sender_id(), 0)
         message.add_params(MyMessage.MSG_ARG_KEY_COMMITMENT, commitment)
         self.send_message(message)
-   
+
 
     def send_veri_encoded_mask_to_server(self, receive_id, encoded_veri_mask_set):
         # send this (also) to the respective client
@@ -430,11 +401,11 @@ class LightVeriAggClientManager(ClientManager):
     def send_veri_masked_hash_randomness(self):
 
         message = Message(MyMessage.MSG_TYPE_C2S_VERI_MASKED_HASH_R, self.get_sender_id(), 0)
-        message.add_params(MyMessage.MSG_ARG_KEY_MASKED_HASH, self.hz)
-        message.add_params(MyMessage.MSG_ARG_KEY_MASKED_RND,  self.rz)
+        message.add_params(MyMessage.MSG_ARG_KEY_MASKED_HASH_U, self.hz)
+        message.add_params(MyMessage.MSG_ARG_KEY_MASKED_RND_U,  self.rz)
         self.send_message(message)
 
-           
+
 
     def send_encoded_mask_to_server(self, receive_id, encoded_mask):
         # send this only to the respective client
@@ -469,10 +440,8 @@ class LightVeriAggClientManager(ClientManager):
 
     def check_whether_all_commitments_receive(self):
         for idx in range(self.worker_num):
-            if not self.flag_commitment_dict[idx]:
+            if idx not in self.all_commmitments:
                 return False
-        for idx in range(self.worker_num):
-            self.flag_commitment_dict[idx] = False
         return True
 
     def check_whether_all_encoded_mask_receive(self):
@@ -492,22 +461,20 @@ class LightVeriAggClientManager(ClientManager):
             encoded_veri_mask = encoded_veri_mask_set[receive_id - 1]
             if receive_id != self.get_sender_id():
 
-                self.send_veri_encoded_mask_to_server(receive_id, encoded_veri_mask) # MSG_TYPE_C2S_SEND_ENCODED_MASK_TO_SERVER
-                self.send_encoded_mask_to_server(receive_id, encoded_mask)
+                self.send_veri_encoded_mask_to_server(receive_id, encoded_veri_mask) # 3: MSG_TYPE_C2S_SEND_VERI_ENCODED_MASK_TO_SERVER
+                self.send_encoded_mask_to_server(receive_id, encoded_mask)           # 2: MSG_TYPE_C2S_SEND_ENCODED_MASK_TO_SERVER
 
             else:
-                self.encoded_mask_dict[receive_id - 1] = encoded_mask
-                self.flag_encoded_mask_dict[receive_id - 1] = True
+                self.add_encoded_mask(receive_id - 1, encoded_mask)
+                self.add_encoded_veri_mask(receive_id - 1, encoded_veri_mask)
 
     def __offline(self):
-        # - Creating a local mask z and zv
+        # - Creating a local mask z and zv = (zh, zr)
         # - Sharding z and zv
         # - sending z_ij and zv_ij to the respective client
-        
+
         logging.info("#######Client %d offline encoding round_id = %d######" % (self.get_sender_id(), self.round_idx))
-        t0 = time.time()
-        
-        # encoded_mask_set = self.mask_encoding()
+
         d = self.total_dimension
         N = self.size - 1
         U = self.targeted_number_active_clients
@@ -515,38 +482,28 @@ class LightVeriAggClientManager(ClientManager):
         p = self.prime_number
         logging.debug("d = {}, N = {}, U = {}, T = {}, p = {}".format(d, N, U, T, p))
 
-        n_i = np.random.randint(p, size=(T * d // (U - T), 1))
-        logging.debug("size of n_i is: " + str((T * d // (U - T), 1)))
+        # [LightSeg mask] z_i in F_p^d (padded to a multiple of U-T), split into U-T pieces, T blindings, MDS encoded
+        with timer("client: [A.1] LightSecAgg mask z_i: generate + encode", who=self.rank, rnd=self.round_idx):
+            d_pad = padded_dimension(d, U, T)
+            self.local_mask = random_field_array(p, (d_pad, 1))                 # mask z_i for client i
+            encoded_mask_set = mask_encoding(d_pad, N, U, T, p, self.local_mask)
 
-        logging.debug("expected full shape is " + str((U, d // (U - T))))
-        
-        self.local_mask = np.random.randint(p, size=(d, 1))                     # mask z_i for client i
-        self.local_veri_mask = generate_point_EC()
-        self.n_array = []  # n_array comes from the EC
-        for x in range(T):
-            self.n_array.append(generate_point_EC())
-        
-        # mask_encoding will: 
-        #   split this into z_ij    
-        #   randomly sample n_ij..
-        #   multiplies this with W ?!
-        #   
-        encoded_mask_set = mask_encoding(d, N, U, T, p, self.local_mask)
-        
-        alpha_s = np.array(range(N)) + 1
-        beta_s = np.array(range(U)) + (N+1)
-        #  zv_tilde_array =
-        encoded_veri_mask_set = LightVeriFL_enc_EC( self.local_veri_mask, self.n_array, alpha_s, beta_s, P256)   #mask_encoding(1, N, U, T, p, self.local_veri_mask)      # TODO: replace with EC encoding: done?
+        # [Separate verification mask] zv_i = (zh_i, zr_i):
+        #   zh_i : random EC point, masks the hash h_i         -> (N, T+1) MDS code over the curve (LightVeriFL)
+        #   zr_i : random integer in Z_n, masks the El Gamal randomness r_i -> the same MDS code over Z_n
+        with timer("client: [A.1] verification masks zh_i, zr_i: generate + encode", who=self.rank, rnd=self.round_idx):
+            zh = generate_point_EC()
+            nh_array = [generate_point_EC() for _ in range(T)]
+            zr = random_scalar()
+            nr_array = [random_scalar() for _ in range(T)]
+            self.local_veri_mask = (zh, zr)
+            evalpoints_in, evalpoints_out = veri_eval_points(N, T)
+            encoded_zh = LightVeriFL_enc_EC(zh, nh_array, evalpoints_in, evalpoints_out, P256)
+            encoded_zr = LightVeriFL_enc_scalar(zr, nr_array, evalpoints_in, evalpoints_out, curve_n)
+            encoded_veri_mask_set = list(zip(encoded_zh, encoded_zr))
 
-        t1 = time.time()
-        self.timing_measurements["__offline: z and zv generated, sharded"] = t1-t0
-                   
         # Send the encoded masks to other clients (via server)
-        t0 = time.time()
         self.encoded_mask_sharing(encoded_mask_set, encoded_veri_mask_set)
-        t1 = time.time()
-        self.timing_measurements["__offline: sharded z, zv distributed"] = t1-t0
-        # TODO: encoded_veri_mask_set sharing?? Done?!
 
     def __train(self):
         logging.info("Client %d #######training########### round_id = %d" % (self.get_sender_id(), self.round_idx))

@@ -2,8 +2,11 @@
 # EC crytopgrahy implementation from https://asecuritysite.com/encryption/ecdh3
 import itertools
 import collections
+import copyreg
+import functools
 import hashlib
 import random
+import secrets
 import binascii
 import time
 #from fedml_api.distributed.lightveriagg.utils import gen_Lagrange_coeffs
@@ -15,7 +18,8 @@ from fedml_api.distributed.lightveriagg.utils import gen_Lagrange_coeffs, transf
 import numpy as np
 import math
 
-from fastecdsa.curve import P256
+from fastecdsa import curve as _fastecdsa_curve_module
+from fastecdsa.curve import P256, Curve as _FastecdsaCurve
 #from fastecdsa.curve import brainlabcurve
 from fastecdsa.point import Point
 from tqdm import tqdm
@@ -56,6 +60,106 @@ curve_p = P256.p
 p_model = 2 ** 31 - 1  # field size for model
 #p_model = curve_n  # field size for model
 system_n = curve_n
+
+
+# ---------------------------------------------------------------------------------------------
+# Helpers used by LightVeriAgg (LightVeriFL + LightSecAgg with an El Gamal commitment)
+# ---------------------------------------------------------------------------------------------
+
+# fastecdsa compares/adds points via `point.curve is other.curve`. Pickling (= every MPI message)
+# created a fresh Curve object, hence the many `Point(v.x, v.y, curve=P256)` re-wraps below and a
+# CurveMismatchError otherwise. Unpickle curves as the module-level singletons instead.
+_CURVES_BY_NAME = {c.name: c for c in vars(_fastecdsa_curve_module).values() if isinstance(c, _FastecdsaCurve)}
+
+
+def _curve_by_name(name):
+    return _CURVES_BY_NAME[name]
+
+
+copyreg.pickle(_FastecdsaCurve, lambda c: (_curve_by_name, (c.name,)))
+
+IDENTITY = Point(0, 0, curve=None)  # point at infinity (fastecdsa convention)
+
+
+def is_identity(P):
+    return P.curve is None and P.x == 0 and P.y == 0
+
+
+def to_p256(P):
+    """Re-attach P256 (e.g. after a transport that lost the curve object); keeps the identity."""
+    if is_identity(P) or P.curve is P256:
+        return P
+    return Point(P.x, P.y, curve=P256)
+
+
+def ec_add(P, Q):
+    return to_p256(P) + to_p256(Q)
+
+
+def ec_mul(k, P):
+    """k * P for any integer k (also numpy ints, negative k) and any P, including the identity."""
+    k = int(k)
+    if abs(k) >= curve_n:
+        k %= curve_n
+    if k == 0 or is_identity(P):
+        return IDENTITY
+    return k * to_p256(P)
+
+
+def random_scalar():
+    """Uniform element of Z_n^* (cryptographically secure)."""
+    return 1 + secrets.randbelow(curve_n - 1)
+
+
+def hash_to_point(seed: bytes):
+    """Deterministic ("nothing up my sleeve") point whose discrete logarithm nobody knows.
+
+    try-and-increment: x = SHA-256(seed || ctr) mod p until x^3 + ax + b is a square (p = 3 mod 4).
+    """
+    p = P256.p
+    ctr = 0
+    while True:
+        x = int.from_bytes(hashlib.sha256(seed + ctr.to_bytes(4, "big")).digest(), "big") % p
+        rhs = (x * x * x + P256.a * x + P256.b) % p
+        y = pow(rhs, (p + 1) // 4, p)
+        if (y * y) % p == rhs:
+            return Point(x, y, curve=P256)
+        ctr += 1
+
+
+# second generator of the El Gamal commitment: its discrete log w.r.t. curve_g must be unknown,
+# otherwise c = (rG, h + rH) can be opened by everybody (hiding is lost). 2G / 6G is NOT ok for that.
+ELGAMAL_H = hash_to_point(b"LightVeriAgg/ElGamal-commitment/H")
+
+
+@functools.lru_cache(maxsize=4)
+def get_hash_bases(d):
+    """g_1..g_d of the linearly homomorphic hash h(x) = sum_j x[j] g_j.
+
+    Derived with hash_to_point so that no party (in particular not the server) knows discrete-log
+    relations between them; with g_j = alpha_j * G and public alpha_j collisions are trivial
+    (sum_j alpha_j x[j] = sum_j alpha_j y[j] mod n) and a server could forge aggregates.
+    Deterministic, so all parties obtain the same bases without communication. Cached per process.
+    """
+    return tuple(hash_to_point(b"LightVeriAgg/hash-base/" + j.to_bytes(8, "big")) for j in range(int(d)))
+
+
+def hash_vector(vec, bases):
+    """h(x) = sum_j x[j] * g_j for an integer vector x (numpy ints or Python ints, may be negative)."""
+    acc = IDENTITY
+    for x_j, g_j in zip(np.asarray(vec).tolist() if isinstance(vec, np.ndarray) else vec, bases):
+        if x_j:
+            acc = acc + ec_mul(x_j, g_j)
+    return acc
+
+
+def veri_eval_points(N, T):
+    """Evaluation points of the (N, T+1) MDS code of the verification masks.
+
+    evalpoints_in  (T+1): [0] -> the mask itself, [1..T] -> the T random blindings
+    evalpoints_out (N)  : one per client (client index i -> evalpoints_out[i])
+    """
+    return list(range(T + 1)), list(range(T + 1, T + 1 + N))
 
 
 #xs = 0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296 #0xde2444bebc8d36e682edd27e0f271508617519b3221a8fa0b77cab3989da97c9
@@ -278,16 +382,17 @@ def LightVeriFL_enc_EC(hash, n_array, evalpoints_in, evalpoints_out, curve):
     #        N = |evalpoints_out|
     #
 
+    assert len(evalpoints_in) == len(n_array) + 1, "evalpoints_in needs T+1 points (mask + T blindings)"
     output = [(0, 0)] * len(evalpoints_out)
 
     for i in range(len(output)):
-        output[i] = W_enc[i][0] * hash
-        
-        # really just matrix multiplication    
+        output[i] = ec_mul(W_enc[i][0], hash)
+
+        # really just matrix multiplication
         for j in range(len(n_array)):
-            output[i] = output[i] + (W_enc[i][j + 1] * n_array[j])
-    
-    
+            output[i] = output[i] + ec_mul(W_enc[i][j + 1], n_array[j])
+
+
     return output
 
 
@@ -309,36 +414,47 @@ def LightVeriFL_dec_EC(z_tilde, evalpoints_in, evalpoints_out, curve):
 
     W_dec = gen_Lagrange_coeffs(evalpoints_out, [evalpoints_in[0]], curve.q)
 
-    _idx_z = 0
-    output = W_dec[0][_idx_z] * z_tilde[_idx_z]
-    output = Point(output.x, output.y, curve=P256)
-    for j in range(len(evalpoints_out) - 1):
-        tmp_element = (W_dec[0][j + 1] * z_tilde[j + 1])
-        tmp_element = Point(tmp_element.x, tmp_element.y, curve=P256)
-        output = output + tmp_element
-        output = Point(output.x, output.y, curve=P256)
+    z_tilde = list(z_tilde)
+    output = IDENTITY
+    for j in range(len(evalpoints_out)):
+        output = output + ec_mul(W_dec[0][j], z_tilde[j])
     return output
+
+
+def LightVeriFL_enc_scalar(z, n_array, evalpoints_in, evalpoints_out, q=curve_n):
+    """Same (N, T+1) MDS encoding as LightVeriFL_enc_EC, but for a field element z in Z_q.
+
+    Used for the separate integer mask of the El Gamal randomness r_i (r_i lives in Z_n, so it
+    cannot be masked with a group element). n_array: T uniformly random elements of Z_q.
+    """
+    assert len(evalpoints_in) == len(n_array) + 1, "evalpoints_in needs T+1 points (mask + T blindings)"
+    W_enc = gen_Lagrange_coeffs(evalpoints_in, evalpoints_out, q)
+    values = [int(z)] + [int(n) for n in n_array]
+    return [sum(int(W_enc[i][j]) * values[j] for j in range(len(values))) % q for i in range(len(evalpoints_out))]
+
+
+def LightVeriFL_dec_scalar(z_tilde, evalpoints_in, evalpoints_out, q=curve_n):
+    """Inverse of LightVeriFL_enc_scalar from T+1 (aggregated) shares, evaluated at evalpoints_in[0]."""
+    z_tilde = list(z_tilde)
+    assert len(z_tilde) == len(evalpoints_out), "length of evalpoints_out and z_tilde should be the same (=T+1)"
+    W_dec = gen_Lagrange_coeffs(evalpoints_out, [evalpoints_in[0]], q)
+    return sum(int(W_dec[0][j]) * int(z_tilde[j]) for j in range(len(z_tilde))) % q
 
 
 # can be made more efficient, look at fastecdsa.
 def generate_point_EC():
-    """Generates a random point on EC."""
-    private_key = random.randrange(1, curve_n)
+    """Generates a uniformly random point on EC (cryptographically secure randomness)."""
+    private_key = random_scalar()
     public_key_orig = (private_key * curve_g)
     return public_key_orig
 
 
 def PI_addEC(vals):  # upper-case PI -- addition of inputs on EC
-    #print(len(vals))
-    #print('vals 0 is', vals[0])
-    accum = Point(0, 0, curve=None) #None
-    for v in vals: #i in range(1, len(vals)):
-    #    #print(P256.is_point_on_curve((v.x, v.y)))
-        temp = Point(v.x, v.y, curve=P256)
-        accum = accum + temp
-        accum = Point(accum.x, accum.y, curve=P256)
-    #    print(P256.is_point_on_curve((accum.x, accum.y)))
-    #    #print('after addition is', accum)
+    accum = Point(0, 0, curve=None)  # identity
+    for v in vals:
+        if is_identity(v):
+            continue
+        accum = accum + to_p256(v)
     return accum
 
 
@@ -372,44 +488,28 @@ def add_field_elements(listoffieldelements, prime):
 
 
 def different_generators():
-    v = np.array([2,6], dtype=int)  # TODO: nothing up my sleeve
-    distinct_bases = distinct_point_compute(v)
-    return distinct_bases
+    # nothing up my sleeve: (G, H) with unknown log_G(H). (2G, 6G) had log = 3 -> commitments were not hiding.
+    return (curve_g, ELGAMAL_H)
 
 def compute_elgamal_commitment_to_hash_randomness(hash, randomness):
-    assert hash.x != 0 and hash.y != 0, "hash may not just be zero"
-    assert randomness != 0, "randomness would just vanish"
-    #print(type(randomness))
-        
-    #exit(1)
+    """El Gamal commitment to the group element `hash` with randomness r in Z_n: c = (r*G, hash + r*H).
+
+    Perfectly binding, computationally hiding (DDH) and additively homomorphic:
+    c(h1, r1) + c(h2, r2) = c(h1 + h2, r1 + r2 mod n). The identity / r = 0 are allowed so that the
+    (possibly empty) aggregates can be checked with the same function.
+    """
     # hash is a group element
     # randomness is a field / scalar element
     # returns the tuple (c1, c2)
-    
-    #alpha = np.ones((1,), dtype=int)
-
     distinct_base = different_generators()
-    #print(type(  randomness * distinct_base[0]))
-    #exit(1)
-
-    
-    g_powof_r = randomness * distinct_base[0]
-    h_powof_r = randomness * distinct_base[1]
-    if isinstance(g_powof_r, np.ndarray):
-        g_powof_r = g_powof_r[0]
-    c1 = g_powof_r 
-
-    if isinstance(h_powof_r, np.ndarray):
-        h_powof_r = h_powof_r[0]
-
-    M_with_hash = [hash, h_powof_r]   #[0]]
-    #print(hash)
-    #print(h_powof_r)
-    for var in M_with_hash:
-        assert (var.x != 0 and var.y != 0), "erroneous point"
-    c2 = PI_addEC(M_with_hash)
-
+    r = int(randomness) % curve_n
+    c1 = ec_mul(r, distinct_base[0])
+    c2 = ec_add(hash, ec_mul(r, distinct_base[1]))
     return (c1, c2)
+
+
+def elgamal_commitments_equal(c, c_other):
+    return to_p256(c[0]) == to_p256(c_other[0]) and to_p256(c[1]) == to_p256(c_other[1])
     
 
 def aggregate_el_gamal_commitments(commitments):
