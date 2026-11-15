@@ -222,9 +222,7 @@ class LightVeriAggServerManager(ServerManager):
                 logging.info("==============================\n SERVER: TRAINING IS FINISHED! \n The final model update has occurred and the final verification aggregate mask was sent.")
                 os.makedirs(os.path.dirname(self.modelpath) or ".", exist_ok=True)
                 save_model_dict_to_pickle(self.modelpath, self.global_model_params)
-                if self.backend == "MPI":
-                    from mpi4py import MPI
-                    MPI.COMM_WORLD.Barrier()  # wait until every client has verified the last round
+                self.barrier()  # wait until every client has verified the last round
                 self.finish()
 
 

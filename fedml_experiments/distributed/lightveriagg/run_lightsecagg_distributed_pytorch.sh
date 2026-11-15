@@ -5,7 +5,7 @@ CLIENT_NUM=5
 WORKER_NUM=5
 MODEL=lr
 DISTRIBUTION=homo
-ROUND=100
+ROUND=${ROUND:-100}
 EPOCH=2
 BATCH_SIZE=64
 LR=0.001
@@ -15,15 +15,18 @@ CLIENT_OPTIMIZER=sgd
 CI=0
 
 # verification (LightVeriFL, El Gamal commitment)
-VERI_BATCH_SIZE=10        # L: the aggregations of the last L rounds are verified at once (amortized)
-VERI_ALPHA_BITS=64        # bits of the private random coefficients of the batch check (0: plain sum)
-VERI_DROPOUT_RATE=0.0     # simulated fraction of users that drop during the verification phase
+VERI_BATCH_SIZE=${VERI_BATCH_SIZE:-10}        # L: the aggregations of the last L rounds are verified at once (amortized)
+VERI_ALPHA_BITS=${VERI_ALPHA_BITS:-64}        # bits of the private random coefficients of the batch check (0: plain sum)
+VERI_DROPOUT_RATE=${VERI_DROPOUT_RATE:-0.0}     # simulated fraction of users that drop during the verification phase
 
-# 1: run the server and all clients in ONE process (single thread, no MPI) and benchmark
-#    communication (size of every virtually transmitted object) and computation (timers).
-#    Results (report.txt, bench.json, metrics.json, communication.png, computation.png) go to RESULTS_DIR.
-SINGLE_PROCESS=0
-RESULTS_DIR=./results
+# 1: run the server and all clients in ONE process (single thread, no MPI): the clients run one after
+#    another, nothing competes for the CPU. Benchmarks communication (size of every virtually transmitted
+#    object) and computation (timers). Results (report.txt, bench.json, metrics.json, communication.png,
+#    computation.png) go to RESULTS_DIR.
+# (ROUND, VERI_*, SINGLE_PROCESS and RESULTS_DIR can be overridden from the environment,
+#  e.g. ROUND=3 SINGLE_PROCESS=1 bash run_lightsecagg_distributed_pytorch.sh)
+SINGLE_PROCESS=${SINGLE_PROCESS:-0}
+RESULTS_DIR=${RESULTS_DIR:-./results}
 
 
 
@@ -43,8 +46,8 @@ RESULTS_DIR=./results
 
 PROCESS_NUM=`expr $WORKER_NUM + 1`
 
-# log to the container's stdout (docker); fall back to this shell's stdout where that is not possible
-OUT=/proc/1/fd/1
+# log to the container's stdout (docker) or to $LOG; fall back to this shell's stdout where that is not possible
+OUT=${LOG:-/proc/1/fd/1}
 if ! (echo -n > $OUT) 2>/dev/null; then OUT=/dev/stdout; fi
 echo $PROCESS_NUM > $OUT
 

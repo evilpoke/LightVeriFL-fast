@@ -67,6 +67,12 @@ class ClientManager(Observer):
     def register_message_receive_handler(self, msg_type, handler_callback_func):
         self.message_handler_dict[msg_type] = handler_callback_func
 
+    def barrier(self):
+        """All parties wait for each other (e.g. before the job ends). Only MPI runs one process per party;
+        with "SP" all parties share one thread (nothing to wait for)."""
+        if self.backend == "MPI":
+            MPI.COMM_WORLD.Barrier()
+
     def finish(self):
         logging.info("__finish server")
         if self.backend == "MPI":

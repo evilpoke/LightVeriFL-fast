@@ -37,6 +37,29 @@ bash run_lightsecagg_distributed_pytorch.sh
   `--targeted_number_active_clients` (U, set to N), `--prime_number` (p = 2^31-1),
   `--precision_parameter` (quantization bits, 10).
 
+### Architecture: one protocol, interchangeable transports
+* protocol layer -- `LightVeriAggServerManager` / `LightVeriAggClientManager`: only message handlers
+  (`msg_params.get(MyMessage.MSG_ARG_KEY_...)`) and `send_message(Message)`; no MPI, threads, ports.
+* transport layer -- FedML's `BaseCommunicationManager` (strategy; the managers are its observers),
+  chosen with `--backend`:
+  * `MPI` (one process per party with send/receive threads), FedML's `GRPC` / `MQTT` (ports): deployment;
+  * `SP` (`fedml_core/distributed/communication/local`): an in-process message broker (`LocalBus`,
+    an event loop) that delivers one message at a time -- all parties in one thread, the clients compute
+    one after another, no waiting processes drain the CPU. Messages are copied with pickle like MPI does.
+  The end of a run (`barrier()`, `finish()`) is part of FedML's managers as well (MPI: barrier + abort).
+* benchmarking (cross-cutting): message sizes are measured at the bus, computation with `timer()`
+  (a no-op unless a `Bench` is active, i.e. in the single-process mode).
+
+### Benchmarks on your machine
+```
+bash run_benchmarks.sh          # quick, ~25 min
+bash run_benchmarks.sh full     # as in benchmark_results/report.md, ~1.5 h
+```
+Everything runs single-process (clients one after another, one torch/BLAS thread) and the runs one
+after another. Output in `results/benchmarks_<date>/`: (1) the setup of the run script (LR on CIFAR-10,
+5 clients) with `report.txt`, `communication.png`, `computation.png`; (2) the comparison with
+LightVeriFL + SecAgg with `report.md`, `scaling_N.png`, `scaling_d.png`.
+
 ### Tests
 ```
 cd ../../..   # repository root

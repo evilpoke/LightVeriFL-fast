@@ -23,7 +23,7 @@ from .mpc_function import model_masking, mask_encoding, compute_aggregate_encode
 
 
 class VerificationError(Exception):
-    """Raised (single-process mode) / logged (MPI) when a client detects a forged aggregation."""
+    """Raised when a client detects a forged aggregation (the job is stopped before, see forged())."""
 
 
 class LightVeriAggClientManager(ClientManager):
@@ -300,16 +300,13 @@ class LightVeriAggClientManager(ClientManager):
         # the client regards the result as forged and stops (as the former exit(1))
         logging.error("client %d: %s" % (self.get_sender_id(), reason))
         self.verification_failed = True
-        if self.backend == "MPI":
-            self.finish()
+        self.finish()                    # MPI: aborts the job; single process: the bus stops
         raise VerificationError(reason)
 
     def finish_protocol(self):
-        if self.backend == "MPI":
-            from mpi4py import MPI
-            # the server waits here until every client has verified the last round, then it ends the job
-            # (FedML: MPI_Abort on rank 0; a client calling Abort as well only produces Open MPI error noise)
-            MPI.COMM_WORLD.Barrier()
+        # the server waits here until every client has verified the last round, then it ends the job
+        # (FedML/MPI: MPI_Abort on rank 0; a client calling Abort as well only produces Open MPI error noise)
+        self.barrier()
 
 
     def reset_round_state(self):
