@@ -265,6 +265,65 @@ SECURITY_NOTES = """## Security differences (tests in fedml_api/distributed/util
 """
 
 
+# protocol steps grouped into comparable components (client steps: mean per call over the clients)
+COMPONENTS = [
+    ("model masks (secure aggregation), client", ["[A.1] LightSecAgg mask", "[A.2] mask model", "[A.3] aggregate encoded masks",
+                                                  "[A.0] SecAgg", "[A.1] SecAgg"]),
+    ("verification masks: generate + encode, client", ["[A.1] verification mask"]),
+    ("hash h_i, client", ["[A.2] hash h_i"]),
+    ("commitment + masking of h_i / r_i, client", ["[A.2] El Gamal commitment", "[A.2] mask h_i and r_i",
+                                                   "[A.2] Pedersen-variant commitment"]),
+    ("V.0 aggregate masks + verify commitments, client", ["client: [V.0]"]),
+    ("V.1 batch check (per batch), client", ["client: [V.1]"]),
+    ("model recovery, server", ["server: [A.3]"]),
+    ("V.0 decode + unmask, server", ["server: [V.0]"]),
+]
+
+
+def component_means(bench):
+    """component -> mean seconds per party and round (each label: mean over the parties that ran it)"""
+    per_label = defaultdict(list)
+    for r in bench.time:
+        if any(x in r["label"] for x in NOT_PROTOCOL):
+            continue
+        per_label[r["label"]].append(r["seconds"])
+    out = {}
+    for name, patterns in COMPONENTS:
+        labels = [lab for lab in per_label if any(pat in lab for pat in patterns)
+                  and (("server:" in lab) == ("server" in name))]
+        out[name] = sum(float(np.mean(per_label[lab])) for lab in labels) if labels else None
+    return out
+
+
+def component_report(out):
+    """per (N, d, dropout): components of both protocols, averaged over all runs of that configuration"""
+    runs = Path(out) / "runs"
+    found = defaultdict(lambda: defaultdict(list))
+    for path in runs.glob("lightveriagg_a*_p*_N*_d*_*/bench.json"):
+        parts = path.parent.name.split("_")
+        alpha, p, N, d = int(parts[1][1:]), float(parts[2][1:]), int(parts[3][1:]), int(parts[4][1:])
+        found[(N, d, p)]["LightVeriAgg (alpha %d bit)" % alpha].append(component_means(Bench.load(path)))
+    for path in runs.glob("lightverifl_secagg_N*_d*_p*.json"):
+        parts = path.stem.split("_")
+        N, d, p = int(parts[2][1:]), int(parts[3][1:]), float(parts[4][1:])
+        found[(N, d, p)]["LightVeriFL+SecAgg"].append(component_means(Bench.load(path)))
+    lines = ["## Components (mean per party and call, less sensitive to load noise than the critical path)", ""]
+    for (N, d, p) in sorted(found):
+        protos = [k for k in COLORS if k in found[(N, d, p)]]
+        lines.append("**N = %d, d = %d, dropout %d%%**" % (N, d, round(100 * p)))
+        lines.append("")
+        lines.append("| component | " + " | ".join(protos) + " |")
+        lines.append("|---|" + "---|" * len(protos))
+        for name, _ in COMPONENTS:
+            vals = []
+            for proto in protos:
+                xs = [m[name] for m in found[(N, d, p)][proto] if m[name] is not None]
+                vals.append(fmt_seconds(float(np.mean(xs))) if xs else "-")
+            lines.append("| %s | %s |" % (name, " | ".join(vals)))
+        lines.append("")
+    return "\n".join(lines)
+
+
 def table(rows, keys):
     header = ["protocol"] + [k for k, _ in keys]
     lines = ["| " + " | ".join(header) + " |", "|" + "---|" * len(header)]
@@ -293,7 +352,8 @@ def write_report(out):
     for tag in sorted({r["tag"] for r in rows}):
         sub = sorted([r for r in rows if r["tag"] == tag], key=lambda r: (r["d"], r["N"], r["dropout"], r["short"]))
         lines += ["## %s" % tag, "", table(sub, keys), ""]
-    lines += ["figures: " + ", ".join(p.name for p in figs if p is not None), "", SECURITY_NOTES]
+    lines += ["figures: " + ", ".join(p.name for p in figs if p is not None), "", component_report(out), "",
+              SECURITY_NOTES]
     (Path(out) / "report.md").write_text("\n".join(lines) + "\n")
     return Path(out) / "report.md"
 
