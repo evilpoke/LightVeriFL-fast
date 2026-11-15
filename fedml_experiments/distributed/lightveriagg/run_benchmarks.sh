@@ -36,13 +36,13 @@ grep -A 3 "^VERIFICATION" "$BENCH_OUT/1_lightveriagg_cifar10.log" || true
 CMP="$BENCH_OUT/2_vs_lightverifl_secagg"
 echo "== 2a. LightVeriAgg vs. LightVeriFL + SecAgg: N = $N_LIST, dropout 10/30/50 %, d = 10000"
 python3 -u benchmark_vs_lightverifl_secagg.py --N $N_LIST --dropout 0.1 0.3 0.5 --d 10000 \
-  --alpha_bits 0 64 --tag N_scaling --out "$CMP" 2>&1 | grep -E "^LightVeri|results:" | tee "$BENCH_OUT/2a_N_scaling.log"
+  --alpha_bits 0 64 --tag N_scaling --out "$CMP" 2>&1 | grep --line-buffered -E "^LightVeri|results:" | tee "$BENCH_OUT/2a_N_scaling.log"
 echo "== 2b. LightVeriAgg vs. LightVeriFL + SecAgg: d = $D_LIST $D_LARGE, N = 10, 30 % dropout"
 python3 -u benchmark_vs_lightverifl_secagg.py --N 10 --dropout 0.3 --d $D_LIST \
-  --alpha_bits 0 64 --tag d_scaling --out "$CMP" 2>&1 | grep -E "^LightVeri|results:" | tee "$BENCH_OUT/2b_d_scaling.log"
+  --alpha_bits 0 64 --tag d_scaling --out "$CMP" 2>&1 | grep --line-buffered -E "^LightVeri|results:" | tee "$BENCH_OUT/2b_d_scaling.log"
 if [ -n "$D_LARGE" ]; then
   python3 -u benchmark_vs_lightverifl_secagg.py --N 10 --dropout 0.3 --d $D_LARGE \
-    --alpha_bits 0 --tag d_scaling_1M --out "$CMP" 2>&1 | grep -E "^LightVeri|results:" | tee -a "$BENCH_OUT/2b_d_scaling.log"
+    --alpha_bits 0 --tag d_scaling_1M --out "$CMP" 2>&1 | grep --line-buffered -E "^LightVeri|results:" | tee -a "$BENCH_OUT/2b_d_scaling.log"
 fi
 python3 benchmark_vs_lightverifl_secagg.py --report_only --out "$CMP"
 echo "done: $BENCH_OUT"
