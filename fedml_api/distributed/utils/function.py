@@ -82,7 +82,9 @@ def pow(x, a, p):
 
 
 def my_q(X, q_bit, p):
-    X_int = np.round(X * (2 ** q_bit))
+    # float64: in float32 (torch weights) p = 2^31-1 is not representable and every negative value was
+    # quantized to ~2^31 (garbage), i.e. the models lost their negative weights
+    X_int = np.round(np.asarray(X, dtype=np.float64) * (2 ** q_bit))
     is_negative = (abs(np.sign(X_int)) - np.sign(X_int)) / 2
     out = X_int + p * is_negative
     return out.astype('int64')

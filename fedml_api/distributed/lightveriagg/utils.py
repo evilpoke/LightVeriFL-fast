@@ -240,7 +240,9 @@ def my_q(X, q_bit, p):
     # quantisation with parameter q_bit and prime p
 
     
-    X_int = np.round(X * (2 ** q_bit))
+    # float64: in float32 (torch weights) p = 2^31-1 is not representable and every negative value was
+    # quantized to ~2^31 (garbage), i.e. the models lost their negative weights
+    X_int = np.round(np.asarray(X, dtype=np.float64) * (2 ** q_bit))
 
 
     # \phi(x)

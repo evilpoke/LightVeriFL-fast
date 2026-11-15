@@ -379,6 +379,16 @@ def test_quantization_roundtrip_and_centered_lift():
     assert np.array_equal(finite_to_signed(xq, p_model), np.round(x * 2 ** q_bits).astype(np.int64))
 
 
+def test_quantization_of_float32_torch_weights():
+    # torch weights are float32; in float32 p = 2^31-1 is not representable and negative weights used to be
+    # quantized to ~2^31 (out of the field, "+1" after the centered lift): the models lost their negative weights
+    w = torch.tensor([-0.0316, -1e-3, 0.0, 0.5, -3.25, 1000.0, -1000.0], dtype=torch.float32)
+    finite = transform_tensor_to_finite({"w": w.clone()}, p_model, q_bits)["w"]
+    assert finite.min() >= 0 and finite.max() < p_model
+    assert np.allclose(my_q_inv(finite, q_bits, p_model), w.numpy(), atol=2 ** -q_bits)
+    assert np.array_equal(finite_to_signed(finite, p_model), np.round(w.numpy().astype(np.float64) * 2 ** q_bits))
+
+
 # =====================================================================================================
 # simulated verification dropouts
 # =====================================================================================================
