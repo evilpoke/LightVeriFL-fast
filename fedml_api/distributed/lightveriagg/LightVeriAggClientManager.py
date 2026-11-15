@@ -307,8 +307,9 @@ class LightVeriAggClientManager(ClientManager):
     def finish_protocol(self):
         if self.backend == "MPI":
             from mpi4py import MPI
-            MPI.COMM_WORLD.Barrier()  # the server waits here until every client has verified the last round
-            self.finish()
+            # the server waits here until every client has verified the last round, then it ends the job
+            # (FedML: MPI_Abort on rank 0; a client calling Abort as well only produces Open MPI error noise)
+            MPI.COMM_WORLD.Barrier()
 
 
     def reset_round_state(self):
