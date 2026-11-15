@@ -311,6 +311,17 @@ class Bench:
         return {"compute_s": comp, "comm_s": comm, "total_s": comp + comm, "rounds": len(per_round),
                 "uplink_mbps": uplink_mbps, "downlink_mbps": downlink_mbps}
 
+    def per_round_compute(self) -> Dict[int, Dict[str, float]]:
+        """round -> {label: seconds of the slowest party}: the critical path of every step if the
+        clients ran concurrently (steps one after another)."""
+        by: Dict[tuple, Dict[str, float]] = defaultdict(lambda: defaultdict(float))
+        for r in self.time:
+            by[(r["round"], r["label"])][str(r["who"])] += r["seconds"]
+        out: Dict[int, Dict[str, float]] = defaultdict(dict)
+        for (rnd, label), parties in by.items():
+            out[rnd][label] = max(parties.values())
+        return {rnd: out[rnd] for rnd in sorted(out)}
+
     def per_round_comm(self) -> Dict[int, int]:
         out: Dict[int, int] = defaultdict(int)
         for r in self.comm:
@@ -435,7 +446,8 @@ def plot_communication(bench: Bench, path, title: str = "") -> Optional[Path]:
 
 
 def plot_computation(bench: Bench, path, title: str = "") -> Optional[Path]:
-    """Seconds per round and step: average over parties vs. max over parties (= concurrent clients)."""
+    """Left: seconds per round and step, average over parties vs. max over parties (= concurrent clients).
+    Right: computation per round, stacked by step (slowest party per step = concurrent clients)."""
     rows = bench.time_summary()
     if not rows:
         return None
@@ -443,8 +455,10 @@ def plot_computation(bench: Bench, path, title: str = "") -> Optional[Path]:
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+    from matplotlib.ticker import MaxNLocator
 
-    fig, ax = plt.subplots(figsize=(11, max(3.0, 0.45 * len(rows) + 1.2)))
+    fig, (ax, ax2) = plt.subplots(1, 2, figsize=(19, max(3.6, 0.45 * len(rows) + 1.5)),
+                                  gridspec_kw={"width_ratios": [1.0, 1.15]})
     y = np.arange(len(rows))
     ax.barh(y - 0.2, [max(r["avg_per_round_s"], 1e-7) for r in rows], height=0.4, color="#BAB0AC",
             label="average over parties")
@@ -454,9 +468,28 @@ def plot_computation(bench: Bench, path, title: str = "") -> Optional[Path]:
     ax.invert_yaxis()
     ax.set_xscale("log")
     ax.set_xlabel("seconds per round (log scale)")
-    ax.set_title(title or "computation time per round")
+    ax.set_title("computation time per step (mean over rounds)")
     ax.legend(fontsize=8)
     ax.grid(alpha=0.3, axis="x")
+
+    # per round, stacked by step
+    per_round = bench.per_round_compute()
+    rounds = list(per_round)
+    labels = [r["label"] for r in rows]
+    bottom = np.zeros(len(rounds))
+    cmap = plt.get_cmap("tab20")
+    for i, label in enumerate(labels):
+        v = np.array([per_round[rd].get(label, 0.0) for rd in rounds])
+        ax2.bar(rounds, v, bottom=bottom, label=label, color=cmap(i % 20), width=0.85)
+        bottom += v
+    ax2.set_xlabel("round")
+    ax2.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax2.set_ylabel("seconds")
+    ax2.set_title("computation per round (slowest party per step, steps one after another)")
+    ax2.legend(fontsize=7, ncol=1, loc="upper left", bbox_to_anchor=(1.0, 1.0))
+    ax2.grid(alpha=0.3, axis="y")
+    if title:
+        fig.suptitle(title, fontsize=11)
     path = Path(path)
     fig.tight_layout()
     fig.savefig(path, dpi=130)

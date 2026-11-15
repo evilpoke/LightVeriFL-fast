@@ -189,6 +189,13 @@ def write_report(args, bench, summary, server, clients):
         lines += ["  round %3d  test_acc %.4f  test_loss %.4f" % (m["round"], m["test_acc"], m["test_loss"])
                   for m in server.metrics]
         lines.append("")
+    per_round = bench.per_round_compute()
+    if per_round:
+        lines.append("COMPUTATION PER ROUND (slowest party per step, steps one after another; * = batch check V.1)")
+        for rnd, steps in per_round.items():
+            batch = any("[V.1]" in label for label in steps)
+            lines.append("  round %3d%s %10s" % (rnd, "*" if batch else " ", fmt_seconds(sum(steps.values()))))
+        lines.append("")
     lines += [
         "PER CLIENT (sum over %d rounds; mean / max over clients)" % rounds,
         "  upload    %s / %s   (per round %s / %s)" % (fmt_bits(np.mean(up_bits)), fmt_bits(max(up_bits)),

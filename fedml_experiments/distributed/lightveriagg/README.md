@@ -52,13 +52,15 @@ bash run_lightsecagg_distributed_pytorch.sh
 
 ### Benchmarks on your machine
 ```
-bash run_benchmarks.sh          # quick, ~25 min
-bash run_benchmarks.sh full     # as in benchmark_results/report.md, ~1.5 h
+bash run_benchmarks.sh          # quick, ~35 min
+bash run_benchmarks.sh full     # as in benchmark_results/report.md, ~2 h
 ```
 Everything runs single-process (clients one after another, one torch/BLAS thread) and the runs one
 after another. Output in `results/benchmarks_<date>/`: (1) the setup of the run script (LR on CIFAR-10,
-5 clients) with `report.txt`, `communication.png`, `computation.png`; (2) the comparison with
-LightVeriFL + SecAgg with `report.md`, `scaling_N.png`, `scaling_d.png`.
+5 clients, many more rounds than L) with `report.txt`, `communication.png`, `computation.png` (right
+panel: computation per round -- the amortized batch check makes every L-th round expensive, the other
+rounds of a batch are cheap); (2) the comparison with LightVeriFL + SecAgg with `report.md`,
+`scaling_N.png`, `scaling_d.png`.
 
 ### Tests
 ```
