@@ -60,9 +60,21 @@ after another. Output in `results/benchmarks_<date>/`: (1) the setup of the run 
 5 clients, many more rounds than L) with `report.txt`, `communication.png`, `computation.png` (right
 panel: computation per round -- the amortized batch check makes every L-th round expensive, the other
 rounds of a batch are cheap); (2) the comparison with LightVeriFL + SecAgg with `report.md`,
-`scaling_N.png`, `scaling_d.png`. Example: `benchmark_results/lightveriagg_cifar10_40rounds_L10/`
-(40 rounds, L = 10: ~6.5-7 s per round, ~23-26 s in the rounds 9, 19, 29, 39 with the batch check,
-8.9 s per round on average).
+`scaling_N.png`, `scaling_d.png`. Example: `benchmark_results/lightveriagg_cifar10_100rounds_L10/`
+(100 rounds, L = 10: ~6-9 s per round, 21-24.5 s in the rounds 9, 19, ..., 99 with the batch check,
+8.5 s per round on average; all 500 commitment checks and 50 batch checks ok).
+
+Does the batch check get more expensive over the rounds? No:
+```
+python analyze_batch_check.py <run dir> [<run dir> ...]   # e.g. benchmark_results/lightveriagg_cifar10_*
+```
+compares its time with the local training (identical work every round = the speed of the machine) and
+with its machine-independent work, the sum of the bit lengths of the scalars of h(sum_l alpha_l y(l))
+(recorded in metrics.json). Over 100 rounds the batch check takes 14.6-15.7 s per client without a
+trend and its work is constant (~70 bits per model entry: 64-bit alpha_l + the bits of the quantized
+aggregate y(l) + log2 L). It cannot grow with the rounds: only the last L rounds enter, and y(l) is in
+F_p (|y| < p/2), so at most ~98 bits per entry. The rise in the 40-round run (16.3 -> 17.4 s) was the
+machine: its local training slowed down as well (`benchmark_results/batch_check_runs.png`).
 
 ### Tests
 ```

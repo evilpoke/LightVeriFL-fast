@@ -1,0 +1,260 @@
+EXPERIMENT  LightVeriAgg (LightSecAgg + LightVeriFL, El Gamal)  N=5  T=2  U=5  d=30730  L=10
+output      (run: LOG=/dev/stdout ROUND=100 VERI_BATCH_SIZE=10 SINGLE_PROCESS=1 bash run_lightsecagg_distributed_pytorch.sh)
+machine     x86_64, 4 CPU(s)
+wall clock  62.5 min (sequential simulation of 5 clients)
+
+CONFIG      model=lr dataset=cifar10 rounds=100 epochs=2 batch=64 lr=0.001  p=2147483647 q_bits=10
+            T=2 U=5  veri_batch_size L=10  alpha bits=64  verification dropout rate=0
+
+VERIFICATION  rounds completed 100 / 100, all verified: True
+  commitment checks: 500 ok / 500,  batch checks: 50 ok / 50,  simulated verification dropouts: 0
+
+GLOBAL MODEL (server-side evaluation)
+  round   0  test_acc 0.2366  test_loss 2.1998
+  round   1  test_acc 0.2581  test_loss 2.1707
+  round   2  test_acc 0.2672  test_loss 2.1548
+  round   3  test_acc 0.2721  test_loss 2.1453
+  round   4  test_acc 0.2750  test_loss 2.1390
+  round   5  test_acc 0.2775  test_loss 2.1343
+  round   6  test_acc 0.2782  test_loss 2.1307
+  round   7  test_acc 0.2804  test_loss 2.1277
+  round   8  test_acc 0.2825  test_loss 2.1254
+  round   9  test_acc 0.2818  test_loss 2.1234
+  round  10  test_acc 0.2837  test_loss 2.1216
+  round  11  test_acc 0.2849  test_loss 2.1202
+  round  12  test_acc 0.2856  test_loss 2.1190
+  round  13  test_acc 0.2870  test_loss 2.1178
+  round  14  test_acc 0.2884  test_loss 2.1169
+  round  15  test_acc 0.2901  test_loss 2.1160
+  round  16  test_acc 0.2909  test_loss 2.1152
+  round  17  test_acc 0.2917  test_loss 2.1146
+  round  18  test_acc 0.2927  test_loss 2.1140
+  round  19  test_acc 0.2937  test_loss 2.1135
+  round  20  test_acc 0.2938  test_loss 2.1130
+  round  21  test_acc 0.2943  test_loss 2.1125
+  round  22  test_acc 0.2958  test_loss 2.1121
+  round  23  test_acc 0.2959  test_loss 2.1116
+  round  24  test_acc 0.2966  test_loss 2.1112
+  round  25  test_acc 0.2963  test_loss 2.1109
+  round  26  test_acc 0.2963  test_loss 2.1105
+  round  27  test_acc 0.2970  test_loss 2.1102
+  round  28  test_acc 0.2979  test_loss 2.1099
+  round  29  test_acc 0.2983  test_loss 2.1096
+  round  30  test_acc 0.2986  test_loss 2.1094
+  round  31  test_acc 0.2990  test_loss 2.1091
+  round  32  test_acc 0.3001  test_loss 2.1088
+  round  33  test_acc 0.3005  test_loss 2.1086
+  round  34  test_acc 0.3006  test_loss 2.1083
+  round  35  test_acc 0.3015  test_loss 2.1081
+  round  36  test_acc 0.3023  test_loss 2.1079
+  round  37  test_acc 0.3020  test_loss 2.1077
+  round  38  test_acc 0.3022  test_loss 2.1075
+  round  39  test_acc 0.3021  test_loss 2.1074
+  round  40  test_acc 0.3019  test_loss 2.1073
+  round  41  test_acc 0.3021  test_loss 2.1071
+  round  42  test_acc 0.3019  test_loss 2.1069
+  round  43  test_acc 0.3021  test_loss 2.1067
+  round  44  test_acc 0.3025  test_loss 2.1066
+  round  45  test_acc 0.3037  test_loss 2.1064
+  round  46  test_acc 0.3036  test_loss 2.1062
+  round  47  test_acc 0.3040  test_loss 2.1060
+  round  48  test_acc 0.3039  test_loss 2.1059
+  round  49  test_acc 0.3038  test_loss 2.1058
+  round  50  test_acc 0.3036  test_loss 2.1056
+  round  51  test_acc 0.3034  test_loss 2.1055
+  round  52  test_acc 0.3034  test_loss 2.1053
+  round  53  test_acc 0.3038  test_loss 2.1052
+  round  54  test_acc 0.3037  test_loss 2.1051
+  round  55  test_acc 0.3036  test_loss 2.1050
+  round  56  test_acc 0.3038  test_loss 2.1049
+  round  57  test_acc 0.3041  test_loss 2.1048
+  round  58  test_acc 0.3041  test_loss 2.1047
+  round  59  test_acc 0.3039  test_loss 2.1046
+  round  60  test_acc 0.3038  test_loss 2.1045
+  round  61  test_acc 0.3038  test_loss 2.1044
+  round  62  test_acc 0.3038  test_loss 2.1043
+  round  63  test_acc 0.3040  test_loss 2.1043
+  round  64  test_acc 0.3041  test_loss 2.1042
+  round  65  test_acc 0.3042  test_loss 2.1041
+  round  66  test_acc 0.3042  test_loss 2.1040
+  round  67  test_acc 0.3049  test_loss 2.1039
+  round  68  test_acc 0.3048  test_loss 2.1038
+  round  69  test_acc 0.3050  test_loss 2.1038
+  round  70  test_acc 0.3047  test_loss 2.1037
+  round  71  test_acc 0.3045  test_loss 2.1036
+  round  72  test_acc 0.3052  test_loss 2.1035
+  round  73  test_acc 0.3052  test_loss 2.1034
+  round  74  test_acc 0.3056  test_loss 2.1034
+  round  75  test_acc 0.3058  test_loss 2.1033
+  round  76  test_acc 0.3060  test_loss 2.1033
+  round  77  test_acc 0.3061  test_loss 2.1032
+  round  78  test_acc 0.3061  test_loss 2.1031
+  round  79  test_acc 0.3060  test_loss 2.1031
+  round  80  test_acc 0.3061  test_loss 2.1030
+  round  81  test_acc 0.3064  test_loss 2.1029
+  round  82  test_acc 0.3067  test_loss 2.1028
+  round  83  test_acc 0.3068  test_loss 2.1027
+  round  84  test_acc 0.3068  test_loss 2.1027
+  round  85  test_acc 0.3060  test_loss 2.1026
+  round  86  test_acc 0.3059  test_loss 2.1026
+  round  87  test_acc 0.3059  test_loss 2.1025
+  round  88  test_acc 0.3062  test_loss 2.1025
+  round  89  test_acc 0.3065  test_loss 2.1024
+  round  90  test_acc 0.3065  test_loss 2.1023
+  round  91  test_acc 0.3067  test_loss 2.1023
+  round  92  test_acc 0.3063  test_loss 2.1022
+  round  93  test_acc 0.3061  test_loss 2.1022
+  round  94  test_acc 0.3065  test_loss 2.1021
+  round  95  test_acc 0.3064  test_loss 2.1021
+  round  96  test_acc 0.3066  test_loss 2.1021
+  round  97  test_acc 0.3068  test_loss 2.1020
+  round  98  test_acc 0.3068  test_loss 2.1019
+  round  99  test_acc 0.3074  test_loss 2.1019
+
+COMPUTATION PER ROUND (slowest party per step, steps one after another; * = batch check V.1)
+  round   0      7.96 s
+  round   1      8.74 s
+  round   2      8.50 s
+  round   3      7.04 s
+  round   4      7.48 s
+  round   5      7.90 s
+  round   6      7.78 s
+  round   7      7.41 s
+  round   8      8.47 s
+  round   9*    24.48 s
+  round  10      7.20 s
+  round  11      7.10 s
+  round  12      6.71 s
+  round  13      6.09 s
+  round  14      6.23 s
+  round  15      6.48 s
+  round  16      6.32 s
+  round  17      6.66 s
+  round  18      6.08 s
+  round  19*    21.06 s
+  round  20      6.20 s
+  round  21      6.07 s
+  round  22      5.88 s
+  round  23      6.26 s
+  round  24      6.68 s
+  round  25      6.91 s
+  round  26      7.35 s
+  round  27      7.69 s
+  round  28      7.43 s
+  round  29*    23.26 s
+  round  30      6.68 s
+  round  31      7.20 s
+  round  32      6.75 s
+  round  33      7.45 s
+  round  34      7.57 s
+  round  35      7.66 s
+  round  36      6.71 s
+  round  37      7.85 s
+  round  38      6.64 s
+  round  39*    23.42 s
+  round  40      6.85 s
+  round  41      7.57 s
+  round  42      6.53 s
+  round  43      6.79 s
+  round  44      7.08 s
+  round  45      7.93 s
+  round  46      7.37 s
+  round  47      6.61 s
+  round  48      6.80 s
+  round  49*    22.31 s
+  round  50      7.23 s
+  round  51      6.52 s
+  round  52      7.21 s
+  round  53      6.31 s
+  round  54      7.66 s
+  round  55      7.21 s
+  round  56      7.21 s
+  round  57      7.27 s
+  round  58      6.36 s
+  round  59*    21.12 s
+  round  60      6.22 s
+  round  61      6.46 s
+  round  62      6.50 s
+  round  63      7.00 s
+  round  64      7.09 s
+  round  65      6.68 s
+  round  66      7.04 s
+  round  67      6.37 s
+  round  68      7.42 s
+  round  69*    22.21 s
+  round  70      6.45 s
+  round  71      7.08 s
+  round  72      6.51 s
+  round  73      6.40 s
+  round  74      6.24 s
+  round  75      6.24 s
+  round  76      6.67 s
+  round  77      6.41 s
+  round  78      6.28 s
+  round  79*    21.43 s
+  round  80      6.46 s
+  round  81      6.76 s
+  round  82      6.27 s
+  round  83      6.32 s
+  round  84      6.20 s
+  round  85      6.48 s
+  round  86      6.06 s
+  round  87      6.29 s
+  round  88      6.69 s
+  round  89*    22.42 s
+  round  90      6.21 s
+  round  91      7.25 s
+  round  92      7.00 s
+  round  93      7.57 s
+  round  94      7.42 s
+  round  95      7.97 s
+  round  96      8.91 s
+  round  97      6.61 s
+  round  98      6.47 s
+  round  99*    21.98 s
+
+PER CLIENT (sum over 100 rounds; mean / max over clients)
+  upload    32.85 MB / 32.85 MB   (per round 328.54 kB / 328.54 kB)
+  download  29.03 MB / 29.03 MB   (per round 290.32 kB / 290.32 kB)
+  compute   12.3 min / 12.5 min   (per round 7.40 s / 7.49 s)
+SERVER      compute 39.96 s (per round 399.6 ms)
+
+COMMUNICATION   (total 309.43 MB over 100 round(s))
+label                                    direction       msgs  total      per round  per msg  
+----------------------------------------------------------------------------------------------
+ 1 S2C_INIT_CONFIG                       server->client     5    1.23 MB    1.23 MB  245.87 kB
+ 2 C2S_SEND_ENCODED_MASK_TO_SERVER       client->server  2000   81.95 MB  819.54 kB   40.98 kB
+ 3 C2S_SEND_VERI_ENCODED_MASK_TO_SERVER  client->server  2000  193.99 kB    1.94 kB       97 B
+ 4 C2S_VERI_COMMITMENT_TO_SERVER         client->server   500   64.00 kB      640 B      128 B
+ 5 C2S_VERI_MASKED_HASH_R                client->server   500   48.00 kB      480 B       96 B
+ 6 C2S_SEND_MODEL_TO_SERVER              client->server   500   61.48 MB  614.75 kB  122.95 kB
+ 7 S2C_SEND_TO_ACTIVE_CLIENT             server->client   500    2.50 kB       25 B        5 B
+ 8 C2S_SEND_MASK_TO_SERVER               client->server   500   20.49 MB  204.88 kB   40.98 kB
+ 9 S2C_SYNC_MODEL_TO_CLIENT              server->client   500   61.47 MB  614.75 kB  122.95 kB
+10 C2S_VERI_SEND_MASK_TO_SERVER          client->server   500   49.00 kB      490 B       98 B
+11 S2C_SYNC_H_R_TO_CLIENT                server->client   500   49.50 kB      495 B       99 B
+12 S2C_BOTH_ENCODED_MASK_TO_CLIENT_FWD   server->client  2000   82.15 MB  821.46 kB   41.07 kB
+13 S2C_VERI_COMMITMENT_TO_CLIENT_FWD     server->client  2000  258.00 kB    2.58 kB      129 B
+
+COMPUTATION   ('avg/round' = average over parties, 'parallel/round' = max over parties = concurrent clients)
+label                                                                   who     calls  total     per call  avg/round  parallel/round
+------------------------------------------------------------------------------------------------------------------------------------
+client: [A.1] LightSecAgg mask z_i: generate + encode                   client    500    1.23 s    2.5 ms     2.5 ms          3.1 ms
+client: [A.1] verification masks zh_i, zr_i: generate + encode          client    500    7.46 s   14.9 ms    14.9 ms         16.4 ms
+client: [A.2] El Gamal commitment c_i                                   client    500    2.01 s    4.0 ms     4.0 ms          5.1 ms
+client: [A.2] hash h_i = H(x_i)                                         client    500  10.1 min    1.21 s     1.21 s          1.34 s
+client: [A.2] local training                                            client    500  38.6 min    4.64 s     4.64 s          5.13 s
+client: [A.2] mask h_i and r_i                                          client    500    9.4 ms     19 us      19 us           27 us
+client: [A.2] mask model x_i + z_i                                      client    500  125.5 ms    251 us     251 us          350 us
+client: [A.3] aggregate encoded masks (LightSecAgg)                     client    500  125.7 ms    251 us     251 us          306 us
+client: [V.0] aggregate encoded verification masks                      client    500   53.5 ms    107 us     107 us          140 us
+client: [V.0] verify commitments                                        client    500    1.91 s    3.8 ms     3.8 ms          4.2 ms
+client: [V.1] batch check h(sum a_l y(l)) == sum a_l h^l                client     50  12.7 min   15.21 s    15.21 s         15.76 s
+client: update local model with y / |U_1|                               client    500  242.6 ms    485 us     485 us          600 us
+server: [A.3] decode aggregate mask, recover y = sum x_i                server    100  435.3 ms    4.4 ms     4.4 ms          4.4 ms
+server: [V.0] decode aggregate verification masks, unmask sum h, sum r  server    100  216.5 ms    2.2 ms     2.2 ms          2.2 ms
+server: evaluate global model                                           server    100   39.31 s  393.1 ms   393.1 ms        393.1 ms
+
+ESTIMATED ROUND LATENCY with concurrent clients (uplink 10 Mbit/s, downlink 50 Mbit/s): compute 8.47 s + communication 309.3 ms = 8.78 s per round
+
+figures: communication.png, computation.png

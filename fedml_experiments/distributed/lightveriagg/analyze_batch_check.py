@@ -1,14 +1,17 @@
-"""Why does the batch check (V.1) get more expensive over the rounds? -- trend analysis of one run.
+"""Does the batch check (V.1) get more expensive over the rounds? -- trend analysis of runs.
 
-    python analyze_batch_check.py <run dir of the single-process mode (bench.json, metrics.json)>
+    python analyze_batch_check.py <run dir> [<run dir> ...]
 
-Compares, relative to the beginning of the run,
+(run dir: output of the single-process mode with bench.json and metrics.json, e.g. the runs in
+benchmark_results/). For every run it compares, relative to the beginning of the run,
 * the batch-check time (mean over the clients, every L rounds),
 * the local training time (identical work every round: a pure measure of the machine's speed),
 * the hash h_i of the local model (every round),
 * the machine-independent work of the hashes: the sum of the bit lengths of all scalars that are
-  multiplied with the hash bases (a scalar multiplication costs ~ the bit length of the scalar).
-Writes batch_check_trend.png into the run dir and prints the linear trends.
+  multiplied with the hash bases (a scalar multiplication costs ~ the bit length of the scalar),
+writes batch_check_trend.png into the run dir and prints the linear trends.
+With several runs (same setup) it also draws their batch-check and local-training times into one
+figure, batch_check_runs.png next to the first run dir: is a difference real or the machine?
 """
 import json
 import sys
@@ -55,10 +58,40 @@ def relative(series, n_first):
     return keys, [series[k] / base for k in keys]
 
 
-def main(run_dir):
+def load(run_dir):
     run_dir = Path(run_dir)
     bench = json.loads((run_dir / "bench.json").read_text())
     verification = json.loads((run_dir / "metrics.json").read_text())["verification"]
+    return bench, verification
+
+
+def compare_runs(run_dirs):
+    """batch check and local training of several runs in one figure (absolute seconds)"""
+    colors = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"]
+    fig, axes = plt.subplots(1, 2, figsize=(14, 4.6))
+    for run_dir, color in zip(run_dirs, colors):
+        bench, _ = load(run_dir)
+        for ax, label, marker in [(axes[0], "[V.1]", "o"), (axes[1], "local training", None)]:
+            series = per_round_mean(bench, label)
+            ax.plot(list(series), list(series.values()), color=color, marker=marker, ms=6, lw=1.5,
+                    label=Path(run_dir).name)
+    axes[0].set_title("(a) batch check V.1 (every L rounds)")
+    axes[1].set_title("(b) local training (identical work every round = speed of the machine)")
+    for ax in axes:
+        ax.set_xlabel("round")
+        ax.set_ylabel("seconds per client (mean over the clients)")
+        ax.grid(alpha=0.3)
+        ax.legend(fontsize=8)
+    fig.tight_layout()
+    out = Path(run_dirs[0]).parent / "batch_check_runs.png"
+    fig.savefig(out, dpi=130)
+    plt.close(fig)
+    return out
+
+
+def analyze(run_dir):
+    run_dir = Path(run_dir)
+    bench, verification = load(run_dir)
     training = per_round_mean(bench, "local training")
     hashing = per_round_mean(bench, "hash h_i")
     batch = per_round_mean(bench, "[V.1]")
@@ -119,5 +152,15 @@ def main(run_dir):
     print("figure:", out)
 
 
+def main(run_dirs):
+    for run_dir in run_dirs:
+        print("== %s" % run_dir)
+        analyze(run_dir)
+    if len(run_dirs) > 1:
+        print("comparison of the runs:", compare_runs(run_dirs))
+
+
 if __name__ == "__main__":
-    main(sys.argv[1])
+    if len(sys.argv) < 2:
+        sys.exit(__doc__)
+    main(sys.argv[1:])
