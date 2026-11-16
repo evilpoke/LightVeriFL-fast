@@ -22,6 +22,11 @@ from .mpc_function import model_masking, mask_encoding, compute_aggregate_encode
     random_field_array, verification_dropouts
 
 
+def scalar_bits(vec):
+    """sum of the bit lengths of all entries (the work of a hash: one scalar multiplication per entry)"""
+    return int(sum(abs(int(v)).bit_length() for v in (vec.tolist() if isinstance(vec, np.ndarray) else vec)))
+
+
 class VerificationError(Exception):
     """Raised when a client detects a forged aggregation (the job is stopped before, see forged())."""
 
@@ -202,7 +207,10 @@ class LightVeriAggClientManager(ClientManager):
 
             # [Veri Commit]: h_i = H(x_i), r_i <- Z_n, c_i = (r_i G, h_i + r_i H)
             with timer("client: [A.2] hash h_i = H(x_i)", who=self.rank, rnd=self.round_idx):
-                h = hash_vector(flatten_finite_model(x, self.prime_number), self.hash_bases)
+                x_signed = flatten_finite_model(x, self.prime_number)
+                h = hash_vector(x_signed, self.hash_bases)
+            # machine-independent work of the hash: a scalar multiplication costs ~ the bit length of the scalar
+            self.hash_scalar_bits = scalar_bits(x_signed)
 
             with timer("client: [A.2] El Gamal commitment c_i", who=self.rank, rnd=self.round_idx):
                 randomness = random_scalar()
@@ -239,7 +247,8 @@ class LightVeriAggClientManager(ClientManager):
         aggregate_rnd_U = msg_params.get(MyMessage.MSG_ARG_KEY_AGGREGATE_RND_FOR_U)
         aggregate_rnd_D = msg_params.get(MyMessage.MSG_ARG_KEY_AGGREGATE_RND_FOR_D)
 
-        record = {"round": self.round_idx, "client": self.client_idx, "dropped_in_verification": self.veri_dropout_this_round}
+        record = {"round": self.round_idx, "client": self.client_idx, "dropped_in_verification": self.veri_dropout_this_round,
+                  "hash_scalar_bits": getattr(self, "hash_scalar_bits", None)}
         if not self.veri_dropout_this_round:
             # [Round V.0] COM(sum h_i, sum r_i) == sum c_i   (separately for U and D)
             with timer("client: [V.0] verify commitments", who=self.rank, rnd=self.round_idx):
@@ -272,6 +281,8 @@ class LightVeriAggClientManager(ClientManager):
                     h_agg = hash_vector(combined_model, self.hash_bases)
                     h_blindly_added = PI_addEC([ec_mul(a, h_l) for (_, a, _, h_l) in self.batch_buffer])
                     ok = h_agg == h_blindly_added
+                # machine-independent work of the batch check (sum of the bit lengths of its scalars)
+                record["batch_scalar_bits"] = scalar_bits(combined_model)
                 checked_rounds = [r for (r, _, _, _) in self.batch_buffer]
                 record["batch_checked_rounds"] = checked_rounds
                 record["batch_ok"] = bool(ok)
