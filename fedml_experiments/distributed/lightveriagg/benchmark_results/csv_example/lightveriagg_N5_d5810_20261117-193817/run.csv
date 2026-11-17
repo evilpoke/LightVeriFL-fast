@@ -1,0 +1,2 @@
+run,model,dataset,N,T,U,d,L,alpha_bits,dropout,dropout_seed,lr,optimizer,epochs,batch_size,q_bits,p,rounds,rounds_completed,all_verified,final_test_acc,final_test_loss,wall_clock_s,messages,total_comm_bits
+lightveriagg_N5_d5810_20261117-193817,cnn6k,cifar10,5,1,5,5810,2,64,0.3,0,0.05,sgd,1,64,10,2147483647,2,2,1,0.21103766025641027,2.0673959323993096,83.96957344999998,243,9924312

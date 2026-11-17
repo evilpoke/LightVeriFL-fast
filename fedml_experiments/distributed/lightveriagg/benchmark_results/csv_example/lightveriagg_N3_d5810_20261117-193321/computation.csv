@@ -1,0 +1,76 @@
+round,phase,party,step,seconds
+0,offline,1,client: [A.1] LightSecAgg mask z_i: generate + encode,0.0011847970000076202
+0,offline,1,"client: [A.1] verification masks zh_i, zr_i: generate + encode",0.0103643919999854
+0,offline,2,client: [A.1] LightSecAgg mask z_i: generate + encode,0.0005305330000169306
+0,offline,2,"client: [A.1] verification masks zh_i, zr_i: generate + encode",0.008666954999966947
+0,offline,3,client: [A.1] LightSecAgg mask z_i: generate + encode,0.0005584589999898526
+0,offline,3,"client: [A.1] verification masks zh_i, zr_i: generate + encode",0.012097878999952627
+0,training,3,client: [A.2] local training,11.85407611300002
+0,upload,3,client: [A.2] hash h_i = H(x_i),0.4090126179999629
+0,upload,3,client: [A.2] El Gamal commitment c_i,0.0044829529999788065
+0,upload,3,client: [A.2] mask h_i and r_i,2.9256000004806992e-05
+0,training,1,client: [A.2] local training,11.312768072999972
+0,upload,1,client: [A.2] hash h_i = H(x_i),0.29362539300001345
+0,upload,1,client: [A.2] El Gamal commitment c_i,0.0028712140000379804
+0,upload,1,client: [A.2] mask h_i and r_i,2.33869999988201e-05
+0,training,2,client: [A.2] local training,11.796905381999977
+0,upload,2,client: [A.2] hash h_i = H(x_i),0.30510248800004547
+0,upload,2,client: [A.2] El Gamal commitment c_i,0.003133254000033503
+0,upload,2,client: [A.2] mask h_i and r_i,1.4432000000397238e-05
+0,upload,2,client: [A.2] mask model x_i + z_i,0.00019432599998481237
+0,upload,1,client: [A.2] mask model x_i + z_i,0.00011398700002018813
+0,upload,3,client: [A.2] mask model x_i + z_i,0.0001389149999795336
+0,aggregation,1,client: [A.3] aggregate encoded masks (LightSecAgg),5.751499998041254e-05
+0,aggregation,2,client: [A.3] aggregate encoded masks (LightSecAgg),8.517400004848241e-05
+0,aggregation,3,client: [A.3] aggregate encoded masks (LightSecAgg),4.509999996571423e-05
+0,aggregation,server,"server: [A.3] decode aggregate mask, recover y = sum x_i",0.0019624409999892123
+0,evaluation,server,server: evaluate global model,2.3112255660000187
+0,training,1,client: update local model with y / |U_1|,0.0007331349999617487
+0,commitment_check,1,client: [V.0] aggregate encoded verification masks,0.00010611900000867536
+0,training,2,client: update local model with y / |U_1|,0.0005139380000400706
+0,commitment_check,2,client: [V.0] aggregate encoded verification masks,7.443300000886666e-05
+0,training,3,client: update local model with y / |U_1|,0.0006661230000304386
+0,commitment_check,3,client: [V.0] aggregate encoded verification masks,7.50159999824973e-05
+0,commitment_check,server,"server: [V.0] decode aggregate verification masks, unmask sum h, sum r",0.002498917000025358
+0,commitment_check,1,client: [V.0] verify commitments,0.004511337999986154
+1,offline,1,client: [A.1] LightSecAgg mask z_i: generate + encode,0.0005780999999842606
+1,offline,1,"client: [A.1] verification masks zh_i, zr_i: generate + encode",0.011343568000029336
+0,commitment_check,2,client: [V.0] verify commitments,0.004537877000018398
+1,offline,2,client: [A.1] LightSecAgg mask z_i: generate + encode,0.0005804529999977603
+1,offline,2,"client: [A.1] verification masks zh_i, zr_i: generate + encode",0.010954472999969767
+0,commitment_check,3,client: [V.0] verify commitments,0.004621493999991344
+1,offline,3,client: [A.1] LightSecAgg mask z_i: generate + encode,0.0005449579999776688
+1,offline,3,"client: [A.1] verification masks zh_i, zr_i: generate + encode",0.011298373999977684
+1,training,3,client: [A.2] local training,9.514924090000022
+1,upload,3,client: [A.2] hash h_i = H(x_i),0.27257637100001375
+1,upload,3,client: [A.2] El Gamal commitment c_i,0.003248995999967974
+1,upload,3,client: [A.2] mask h_i and r_i,1.6513999980816152e-05
+1,training,1,client: [A.2] local training,9.720442999
+1,upload,1,client: [A.2] hash h_i = H(x_i),0.31596471099999235
+1,upload,1,client: [A.2] El Gamal commitment c_i,0.002725462000000789
+1,upload,1,client: [A.2] mask h_i and r_i,1.3242000022728462e-05
+1,training,2,client: [A.2] local training,9.60193895499998
+1,upload,2,client: [A.2] hash h_i = H(x_i),0.3171642159999237
+1,upload,2,client: [A.2] El Gamal commitment c_i,0.0032373880000022837
+1,upload,2,client: [A.2] mask h_i and r_i,1.4889999988554337e-05
+1,upload,2,client: [A.2] mask model x_i + z_i,0.0002630209999097133
+1,upload,1,client: [A.2] mask model x_i + z_i,0.00017184400007863587
+1,upload,3,client: [A.2] mask model x_i + z_i,0.00020464600004288513
+1,aggregation,1,client: [A.3] aggregate encoded masks (LightSecAgg),0.00022958900001412985
+1,aggregation,2,client: [A.3] aggregate encoded masks (LightSecAgg),7.220999998480693e-05
+1,aggregation,3,client: [A.3] aggregate encoded masks (LightSecAgg),7.514600008562411e-05
+1,aggregation,server,"server: [A.3] decode aggregate mask, recover y = sum x_i",0.001156491999950049
+1,evaluation,server,server: evaluate global model,1.88569299400001
+1,training,1,client: update local model with y / |U_1|,0.0004804689999673428
+1,commitment_check,1,client: [V.0] aggregate encoded verification masks,0.00013432000002921995
+1,training,2,client: update local model with y / |U_1|,0.00030098100000941486
+1,commitment_check,2,client: [V.0] aggregate encoded verification masks,4.862599996613426e-05
+1,training,3,client: update local model with y / |U_1|,0.00026588100001845305
+1,commitment_check,3,client: [V.0] aggregate encoded verification masks,4.650100004255364e-05
+1,commitment_check,server,"server: [V.0] decode aggregate verification masks, unmask sum h, sum r",0.0018616270000393342
+1,commitment_check,1,client: [V.0] verify commitments,0.0035317020000320554
+1,batch_check,1,client: [V.1] batch check h(sum a_l y(l)) == sum a_l h^l,2.695816637000007
+1,commitment_check,2,client: [V.0] verify commitments,0.002697206999982882
+1,batch_check,2,client: [V.1] batch check h(sum a_l y(l)) == sum a_l h^l,3.247386338999945
+1,commitment_check,3,client: [V.0] verify commitments,0.003606666999985464
+1,batch_check,3,client: [V.1] batch check h(sum a_l y(l)) == sum a_l h^l,3.0533071959999916

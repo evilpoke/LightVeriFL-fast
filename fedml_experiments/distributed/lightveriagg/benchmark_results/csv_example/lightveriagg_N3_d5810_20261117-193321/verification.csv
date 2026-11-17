@@ -1,0 +1,7 @@
+round,client,dropped_in_verification,hash_scalar_bits,commitments_ok,batch_scalar_bits,batch_checked_rounds,batch_ok
+0,0,False,33291,True,,,
+0,1,False,33304,True,,,
+0,2,False,33276,True,,,
+1,0,False,33507,True,411676,0 1,True
+1,1,False,33462,True,414736,0 1,True
+1,2,False,33465,True,415680,0 1,True

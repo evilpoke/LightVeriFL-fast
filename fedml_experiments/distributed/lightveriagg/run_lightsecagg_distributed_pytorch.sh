@@ -51,7 +51,7 @@ RESULTS_DIR=${RESULTS_DIR:-./results}
 
 PROCESS_NUM=`expr $WORKER_NUM + 1`
 
-# log to the container's stdout (docker) or to $LOG; fall back to this shell's stdout where that is not possible
+# log (stdout and stderr) to the container's stdout (docker) or to the file $LOG; fall back to this shell's stdout where that is not possible
 OUT=${LOG:-/proc/1/fd/1}
 if ! (echo -n > $OUT) 2>/dev/null; then OUT=/dev/stdout; fi
 echo $PROCESS_NUM > $OUT
@@ -75,9 +75,9 @@ ARGS="--model $MODEL \
   --results_dir $RESULTS_DIR"
 
 if [ "$SINGLE_PROCESS" = "1" ]; then
-  python3 -u ./main_lightveriagg.py $ARGS --single_process 1 --backend "SP" > $OUT
+  python3 -u ./main_lightveriagg.py $ARGS --single_process 1 --backend "SP" > $OUT 2>&1
 else
   mpirun --tag-output -x PATH -x LD_LIBRARY_PATH -np $PROCESS_NUM -hostfile ./mpi_host_file python3 -u ./main_lightveriagg.py \
     $ARGS \
-    --backend "MPI" > $OUT
+    --backend "MPI" > $OUT 2>&1
 fi

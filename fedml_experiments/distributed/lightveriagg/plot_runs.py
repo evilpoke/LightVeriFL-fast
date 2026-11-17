@@ -111,8 +111,9 @@ def main():
     for i, (label, by_N) in enumerate(sorted(lines.items())):
         Ns = sorted(by_N)
         ys = [scale * sum(by_N[n]) / len(by_N[n]) for n in Ns]
+        thinner = min(i, 3)                            # later lines thinner: lines on top of each other stay visible
         ax.plot(Ns, ys, color=COLORS[i % len(COLORS)], ls=LINESTYLES[i // len(COLORS) % len(LINESTYLES)],
-                marker=MARKERS[i % len(MARKERS)], ms=6, lw=2, label=label)
+                marker=MARKERS[i % len(MARKERS)], ms=9 - 1.5 * thinner, lw=3.5 - 0.7 * thinner, label=label)
     ax.set_xlabel("number of clients N")
     ax.set_xticks(sorted({N for _, N, _ in points}))
     per = "" if a.y in points[0][0] else " (per iteration, mean over the rounds)"
