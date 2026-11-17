@@ -42,6 +42,8 @@ bash run_lightsecagg_distributed_pytorch.sh
   `cnn6k` 53.9 %, `cnn15k` 57.7 %, `lr` 34.7 %, `lenet5` 61.0 %, `mlp99k` 45.4 %. `lr` and `mlp99k`
   have plateaued, `lenet5` is flattening (+2.6 points in the last 10 rounds), the two GAP-CNNs still
   gain ~0.5 points per round. Compare runs with `python compare_convergence.py <run dir> ...`.
+  Each run folder also has communication.png (exact), computation_per_step.png and
+  computation_per_round.png; the five runs shared 4 cores, so their times are ~1.3x too high and noisy.
 * `VERI_BATCH_SIZE` (L), `VERI_ALPHA_BITS` (0 = plain sum as in the LightVeriFL implementation, which
   lets a server shift a forgery between rounds), `VERI_DROPOUT_RATE` (simulated verification dropouts;
   at least T+1 users must survive).
