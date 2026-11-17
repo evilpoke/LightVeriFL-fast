@@ -1,0 +1,972 @@
+{
+  "machine": {
+    "platform": "Linux-6.18.44-fc-v553-x86_64-with-glibc2.39",
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.30GHz",
+    "logical_cpus": 4,
+    "physical_cpus": 4,
+    "ram_gb": 15.71060562133789,
+    "python": "3.13.18",
+    "ezkl": "23.0.5",
+    "onnxruntime": "1.29.0",
+    "date": "2026-11-17 21:55:58"
+  },
+  "config": {
+    "param_visibility": "private",
+    "input_visibility": "public",
+    "output_visibility": "public",
+    "calibration_target": "resources",
+    "max_logrows": null,
+    "max_prove_logrows": 20,
+    "num_inner_cols": null,
+    "repeats": 3,
+    "threads": null,
+    "srs": "auto",
+    "n_calib": 20,
+    "n_eval": 100
+  },
+  "dataset": "cifar10, models trained 2 epochs on 10000 images",
+  "models": {
+    "cnn6k": {
+      "params": 5810,
+      "phases": {
+        "import": {
+          "status": "ok",
+          "wall_s": 0.6251929209997797,
+          "cpu_s": 1.574214915,
+          "cpu_user_s": 1.45,
+          "cpu_sys_s": 0.13,
+          "avg_cores": 2.5179666341752367,
+          "peak_rss_mb": 106.21875,
+          "rss_before_mb": 41.08203125,
+          "phase_ram_mb": 65.13671875,
+          "peak_is_phase_only": true,
+          "runs": 1
+        },
+        "calibrate": {
+          "status": "ok",
+          "wall_s": 88.11907208000002,
+          "cpu_s": 214.022679323,
+          "cpu_user_s": 195.13,
+          "cpu_sys_s": 18.889999999999997,
+          "avg_cores": 2.4287895261617916,
+          "peak_rss_mb": 217.04296875,
+          "rss_before_mb": 41.1796875,
+          "phase_ram_mb": 175.86328125,
+          "peak_is_phase_only": true,
+          "runs": 1
+        },
+        "compile": {
+          "status": "ok",
+          "wall_s": 0.007502798999666993,
+          "cpu_s": 0.032008272000000004,
+          "cpu_user_s": 0.03,
+          "cpu_sys_s": 0.0,
+          "avg_cores": 4.266177462760321,
+          "peak_rss_mb": 54.56640625,
+          "rss_before_mb": 41.1484375,
+          "phase_ram_mb": 13.41796875,
+          "peak_is_phase_only": true,
+          "runs": 1
+        },
+        "quantize_input": {
+          "status": "ok",
+          "wall_s": 0.004929761000312283,
+          "cpu_s": 0.016797870999999992,
+          "cpu_user_s": 0.01999999999999999,
+          "cpu_sys_s": 0.0,
+          "avg_cores": 3.433542924074362,
+          "peak_rss_mb": 43.625,
+          "rss_before_mb": 41.1875,
+          "phase_ram_mb": 2.4375,
+          "peak_is_phase_only": true,
+          "input_elements": 3072,
+          "input_scale": 13,
+          "runs": 3
+        },
+        "witness": {
+          "status": "ok",
+          "wall_s": 0.7007879359998697,
+          "cpu_s": 1.7339734549999999,
+          "cpu_user_s": 1.57,
+          "cpu_sys_s": 0.17,
+          "avg_cores": 2.4743197848090843,
+          "peak_rss_mb": 105.1953125,
+          "rss_before_mb": 41.20703125,
+          "phase_ram_mb": 63.98828125,
+          "peak_is_phase_only": true,
+          "quantized_input_matches_witness": true,
+          "runs": 3
+        },
+        "srs": {
+          "status": "skipped",
+          "error": "circuit 2^21 > --max-prove-logrows 20"
+        },
+        "setup": {
+          "status": "skipped",
+          "error": "needs srs"
+        },
+        "prove": {
+          "status": "skipped",
+          "error": "needs setup"
+        },
+        "verify": {
+          "status": "skipped",
+          "error": "needs prove"
+        }
+      },
+      "circuit": {
+        "logrows": 21,
+        "num_rows": 1277272,
+        "total_assignments": 2554544,
+        "input_scale": 13,
+        "param_scale": 13,
+        "output_scale": 13,
+        "lookups": []
+      },
+      "accuracy": {
+        "n_images": 100,
+        "acc_float_pct": 32.0,
+        "acc_ezkl_pct": 32.0,
+        "acc_drop_pp": 0.0,
+        "agreement_pct": 100.0,
+        "changed_predictions": 0,
+        "tied_top_pct": 0.0,
+        "mean_abs_err": 0.0005036918045952917,
+        "max_abs_err": 0.001735091209411621,
+        "rel_err_pct": 0.053090157707514546,
+        "quant_step": 0.0001220703125,
+        "mean_abs_err_in_steps": 4.126243263244629
+      },
+      "summary": {
+        "import ONNX": {
+          "status": "ok",
+          "wall_s": 0.6251929209997797,
+          "cpu_s": 1.574214915,
+          "avg_cores": 2.5179666341752367,
+          "peak_rss_mb": 106.21875,
+          "phase_ram_mb": 65.13671875
+        },
+        "quantize model": {
+          "status": "ok",
+          "wall_s": 88.12657487899969,
+          "cpu_s": 214.05468759500002,
+          "avg_cores": 2.428945955166228,
+          "peak_rss_mb": 217.04296875,
+          "phase_ram_mb": 175.86328125
+        },
+        "quantize input": {
+          "status": "ok",
+          "wall_s": 0.004929761000312283,
+          "cpu_s": 0.016797870999999992,
+          "avg_cores": 3.407441253021375,
+          "peak_rss_mb": 43.625,
+          "phase_ram_mb": 2.4375
+        },
+        "generate witness": {
+          "status": "ok",
+          "wall_s": 0.7007879359998697,
+          "cpu_s": 1.7339734549999999,
+          "avg_cores": 2.4743197848090843,
+          "peak_rss_mb": 105.1953125,
+          "phase_ram_mb": 63.98828125
+        },
+        "prove": {
+          "status": "skipped",
+          "error": "prove: needs setup"
+        },
+        "verify": {
+          "status": "skipped",
+          "error": "verify: needs prove"
+        },
+        "one-time setup (SRS + keys)": {
+          "status": "skipped",
+          "error": "srs: circuit 2^21 > --max-prove-logrows 20; setup: needs srs"
+        }
+      }
+    },
+    "cnn15k": {
+      "params": 14666,
+      "phases": {
+        "import": {
+          "status": "ok",
+          "wall_s": 0.8640880650000327,
+          "cpu_s": 2.235660454,
+          "cpu_user_s": 2.08,
+          "cpu_sys_s": 0.16,
+          "avg_cores": 2.5873062533272178,
+          "peak_rss_mb": 126.59375,
+          "rss_before_mb": 41.1015625,
+          "phase_ram_mb": 85.4921875,
+          "peak_is_phase_only": true,
+          "runs": 1
+        },
+        "calibrate": {
+          "status": "ok",
+          "wall_s": 144.144709014,
+          "cpu_s": 358.612498796,
+          "cpu_user_s": 332.34,
+          "cpu_sys_s": 26.27,
+          "avg_cores": 2.487864460992251,
+          "peak_rss_mb": 238.9921875,
+          "rss_before_mb": 41.14453125,
+          "phase_ram_mb": 197.84765625,
+          "peak_is_phase_only": true,
+          "runs": 1
+        },
+        "compile": {
+          "status": "ok",
+          "wall_s": 0.030878071000188356,
+          "cpu_s": 0.105476544,
+          "cpu_user_s": 0.10000000000000003,
+          "cpu_sys_s": 0.0,
+          "avg_cores": 3.4159045751062815,
+          "peak_rss_mb": 56.67578125,
+          "rss_before_mb": 41.12890625,
+          "phase_ram_mb": 15.546875,
+          "peak_is_phase_only": true,
+          "runs": 1
+        },
+        "quantize_input": {
+          "status": "ok",
+          "wall_s": 0.00623481399998127,
+          "cpu_s": 0.029898732999999983,
+          "cpu_user_s": 0.020000000000000018,
+          "cpu_sys_s": 0.0,
+          "avg_cores": 3.9640182029971145,
+          "peak_rss_mb": 44.4765625,
+          "rss_before_mb": 41.17578125,
+          "phase_ram_mb": 3.328125,
+          "peak_is_phase_only": true,
+          "input_elements": 3072,
+          "input_scale": 13,
+          "runs": 3
+        },
+        "witness": {
+          "status": "ok",
+          "wall_s": 1.059806216999732,
+          "cpu_s": 2.710916969,
+          "cpu_user_s": 2.6,
+          "cpu_sys_s": 0.19,
+          "avg_cores": 2.5579364656630292,
+          "peak_rss_mb": 120.44921875,
+          "rss_before_mb": 41.171875,
+          "phase_ram_mb": 79.26953125,
+          "peak_is_phase_only": true,
+          "quantized_input_matches_witness": true,
+          "runs": 3
+        },
+        "srs": {
+          "status": "skipped",
+          "error": "circuit 2^22 > --max-prove-logrows 20"
+        },
+        "setup": {
+          "status": "skipped",
+          "error": "needs srs"
+        },
+        "prove": {
+          "status": "skipped",
+          "error": "needs setup"
+        },
+        "verify": {
+          "status": "skipped",
+          "error": "needs prove"
+        }
+      },
+      "circuit": {
+        "logrows": 22,
+        "num_rows": 2256900,
+        "total_assignments": 4513800,
+        "input_scale": 13,
+        "param_scale": 13,
+        "output_scale": 13,
+        "lookups": []
+      },
+      "accuracy": {
+        "n_images": 100,
+        "acc_float_pct": 38.0,
+        "acc_ezkl_pct": 38.0,
+        "acc_drop_pp": 0.0,
+        "agreement_pct": 100.0,
+        "changed_predictions": 0,
+        "tied_top_pct": 0.0,
+        "mean_abs_err": 0.00036406577564775946,
+        "max_abs_err": 0.0020465850830078125,
+        "rel_err_pct": 0.026592393825474223,
+        "quant_step": 0.0001220703125,
+        "mean_abs_err_in_steps": 2.9824268341064455
+      },
+      "summary": {
+        "import ONNX": {
+          "status": "ok",
+          "wall_s": 0.8640880650000327,
+          "cpu_s": 2.235660454,
+          "avg_cores": 2.5873062533272178,
+          "peak_rss_mb": 126.59375,
+          "phase_ram_mb": 85.4921875
+        },
+        "quantize model": {
+          "status": "ok",
+          "wall_s": 144.1755870850002,
+          "cpu_s": 358.71797534,
+          "avg_cores": 2.4880632192502476,
+          "peak_rss_mb": 238.9921875,
+          "phase_ram_mb": 197.84765625
+        },
+        "quantize input": {
+          "status": "ok",
+          "wall_s": 0.00623481399998127,
+          "cpu_s": 0.029898732999999983,
+          "avg_cores": 4.795449070347535,
+          "peak_rss_mb": 44.4765625,
+          "phase_ram_mb": 3.328125
+        },
+        "generate witness": {
+          "status": "ok",
+          "wall_s": 1.059806216999732,
+          "cpu_s": 2.710916969,
+          "avg_cores": 2.5579364656630292,
+          "peak_rss_mb": 120.44921875,
+          "phase_ram_mb": 79.26953125
+        },
+        "prove": {
+          "status": "skipped",
+          "error": "prove: needs setup"
+        },
+        "verify": {
+          "status": "skipped",
+          "error": "verify: needs prove"
+        },
+        "one-time setup (SRS + keys)": {
+          "status": "skipped",
+          "error": "srs: circuit 2^22 > --max-prove-logrows 20; setup: needs srs"
+        }
+      }
+    },
+    "lr": {
+      "params": 30730,
+      "phases": {
+        "import": {
+          "status": "ok",
+          "wall_s": 0.07784800900026312,
+          "cpu_s": 0.26906720100000003,
+          "cpu_user_s": 0.25,
+          "cpu_sys_s": 0.019999999999999997,
+          "avg_cores": 3.4563144832527524,
+          "peak_rss_mb": 70.57421875,
+          "rss_before_mb": 41.08984375,
+          "phase_ram_mb": 29.484375,
+          "peak_is_phase_only": true,
+          "runs": 1
+        },
+        "calibrate": {
+          "status": "ok",
+          "wall_s": 9.798486508000224,
+          "cpu_s": 18.075842126999998,
+          "cpu_user_s": 13.51,
+          "cpu_sys_s": 4.5600000000000005,
+          "avg_cores": 1.8447585871799197,
+          "peak_rss_mb": 271.25,
+          "rss_before_mb": 41.17578125,
+          "phase_ram_mb": 230.07421875,
+          "peak_is_phase_only": true,
+          "runs": 1
+        },
+        "compile": {
+          "status": "ok",
+          "wall_s": 0.015589551000175561,
+          "cpu_s": 0.05637374200000003,
+          "cpu_user_s": 0.04999999999999999,
+          "cpu_sys_s": 0.01,
+          "avg_cores": 3.616123517564116,
+          "peak_rss_mb": 53.4453125,
+          "rss_before_mb": 41.06640625,
+          "phase_ram_mb": 12.37890625,
+          "peak_is_phase_only": true,
+          "runs": 1
+        },
+        "quantize_input": {
+          "status": "ok",
+          "wall_s": 0.0030154549999679148,
+          "cpu_s": 0.015017934999999982,
+          "cpu_user_s": 0.009999999999999981,
+          "cpu_sys_s": 0.0,
+          "avg_cores": 3.523521443177864,
+          "peak_rss_mb": 42.3984375,
+          "rss_before_mb": 41.140625,
+          "phase_ram_mb": 1.22265625,
+          "peak_is_phase_only": true,
+          "input_elements": 3072,
+          "input_scale": 11,
+          "runs": 3
+        },
+        "witness": {
+          "status": "ok",
+          "wall_s": 0.08616658899973118,
+          "cpu_s": 0.2945985769999999,
+          "cpu_user_s": 0.27999999999999997,
+          "cpu_sys_s": 0.02,
+          "avg_cores": 3.361504097613793,
+          "peak_rss_mb": 70.9296875,
+          "rss_before_mb": 41.109375,
+          "phase_ram_mb": 29.7734375,
+          "peak_is_phase_only": true,
+          "quantized_input_matches_witness": true,
+          "runs": 3
+        },
+        "srs": {
+          "status": "ok",
+          "wall_s": 2.1563431650001803,
+          "cpu_s": 0.449201455,
+          "cpu_user_s": 0.32000000000000006,
+          "cpu_sys_s": 0.13999999999999999,
+          "avg_cores": 0.20831631174992615,
+          "peak_rss_mb": 115.140625,
+          "rss_before_mb": 41.17578125,
+          "phase_ram_mb": 73.96484375,
+          "peak_is_phase_only": true,
+          "srs_source": "downloaded (ezkl public KZG setup)",
+          "logrows": 18,
+          "runs": 1
+        },
+        "setup": {
+          "status": "ok",
+          "wall_s": 15.018051749000279,
+          "cpu_s": 43.590797273999996,
+          "cpu_user_s": 39.43,
+          "cpu_sys_s": 4.17,
+          "avg_cores": 2.902560065882164,
+          "peak_rss_mb": 1799.83203125,
+          "rss_before_mb": 41.1953125,
+          "phase_ram_mb": 1758.63671875,
+          "peak_is_phase_only": true,
+          "pk_mb": 1248.5645551681519,
+          "vk_mb": 0.5639715194702148,
+          "runs": 1
+        },
+        "prove": {
+          "status": "ok",
+          "wall_s": 17.851356156000293,
+          "cpu_s": 61.78689371,
+          "cpu_user_s": 55.15,
+          "cpu_sys_s": 6.54,
+          "avg_cores": 3.425180317391229,
+          "peak_rss_mb": 3033.02734375,
+          "rss_before_mb": 41.25390625,
+          "phase_ram_mb": 2991.83203125,
+          "peak_is_phase_only": true,
+          "proof_kb": 475.6181640625,
+          "runs": 3
+        },
+        "verify": {
+          "status": "ok",
+          "wall_s": 0.17596010899978864,
+          "cpu_s": 0.46494877999999995,
+          "cpu_user_s": 0.38999999999999996,
+          "cpu_sys_s": 0.07,
+          "avg_cores": 2.64235333021167,
+          "peak_rss_mb": 222.70703125,
+          "rss_before_mb": 41.24609375,
+          "phase_ram_mb": 181.45703125,
+          "peak_is_phase_only": true,
+          "verified": true,
+          "runs": 3
+        }
+      },
+      "circuit": {
+        "logrows": 18,
+        "num_rows": 31065,
+        "total_assignments": 62130,
+        "input_scale": 11,
+        "param_scale": 11,
+        "output_scale": 11,
+        "lookups": [
+          {
+            "Sigmoid": {
+              "scale": 2048.0
+            }
+          }
+        ],
+        "srs_source": "downloaded (ezkl public KZG setup)",
+        "pk_mb": 1248.5645551681519,
+        "vk_mb": 0.5639715194702148,
+        "proof_kb": 475.6181640625
+      },
+      "accuracy": {
+        "n_images": 100,
+        "acc_float_pct": 36.0,
+        "acc_ezkl_pct": 37.0,
+        "acc_drop_pp": -1.0000000000000009,
+        "agreement_pct": 87.0,
+        "changed_predictions": 13,
+        "tied_top_pct": 22.0,
+        "mean_abs_err": 0.0005302707850933075,
+        "max_abs_err": 0.009740591049194336,
+        "rel_err_pct": 0.15364824627086945,
+        "quant_step": 0.00048828125,
+        "mean_abs_err_in_steps": 1.0859945678710938
+      },
+      "summary": {
+        "import ONNX": {
+          "status": "ok",
+          "wall_s": 0.07784800900026312,
+          "cpu_s": 0.26906720100000003,
+          "avg_cores": 3.4563144832527524,
+          "peak_rss_mb": 70.57421875,
+          "phase_ram_mb": 29.484375
+        },
+        "quantize model": {
+          "status": "ok",
+          "wall_s": 9.8140760590004,
+          "cpu_s": 18.132215869,
+          "avg_cores": 1.8475723807307476,
+          "peak_rss_mb": 271.25,
+          "phase_ram_mb": 230.07421875
+        },
+        "quantize input": {
+          "status": "ok",
+          "wall_s": 0.0030154549999679148,
+          "cpu_s": 0.015017934999999982,
+          "avg_cores": 4.980321377755522,
+          "peak_rss_mb": 42.3984375,
+          "phase_ram_mb": 1.22265625
+        },
+        "generate witness": {
+          "status": "ok",
+          "wall_s": 0.08616658899973118,
+          "cpu_s": 0.2945985769999999,
+          "avg_cores": 3.41894207975343,
+          "peak_rss_mb": 70.9296875,
+          "phase_ram_mb": 29.7734375
+        },
+        "prove": {
+          "status": "ok",
+          "wall_s": 17.851356156000293,
+          "cpu_s": 61.78689371,
+          "avg_cores": 3.4611876638421033,
+          "peak_rss_mb": 3033.02734375,
+          "phase_ram_mb": 2991.83203125
+        },
+        "verify": {
+          "status": "ok",
+          "wall_s": 0.17596010899978864,
+          "cpu_s": 0.46494877999999995,
+          "avg_cores": 2.64235333021167,
+          "peak_rss_mb": 222.70703125,
+          "phase_ram_mb": 181.45703125
+        },
+        "one-time setup (SRS + keys)": {
+          "status": "ok",
+          "wall_s": 17.17439491400046,
+          "cpu_s": 44.039998729,
+          "avg_cores": 2.5642824070092196,
+          "peak_rss_mb": 1799.83203125,
+          "phase_ram_mb": 1758.63671875
+        }
+      }
+    },
+    "lenet5": {
+      "params": 62006,
+      "phases": {
+        "import": {
+          "status": "ok",
+          "wall_s": 0.37314731400010714,
+          "cpu_s": 0.9394620410000001,
+          "cpu_user_s": 0.79,
+          "cpu_sys_s": 0.15,
+          "avg_cores": 2.517670651113759,
+          "peak_rss_mb": 80.19140625,
+          "rss_before_mb": 41.21484375,
+          "phase_ram_mb": 38.9765625,
+          "peak_is_phase_only": true,
+          "runs": 1
+        },
+        "calibrate": {
+          "status": "ok",
+          "wall_s": 43.086321239000426,
+          "cpu_s": 104.266285856,
+          "cpu_user_s": 90.65,
+          "cpu_sys_s": 13.610000000000001,
+          "avg_cores": 2.419939388132801,
+          "peak_rss_mb": 188.04296875,
+          "rss_before_mb": 41.24609375,
+          "phase_ram_mb": 146.796875,
+          "peak_is_phase_only": true,
+          "runs": 1
+        },
+        "compile": {
+          "status": "ok",
+          "wall_s": 0.05073264600014227,
+          "cpu_s": 0.171963689,
+          "cpu_user_s": 0.16999999999999998,
+          "cpu_sys_s": 0.01,
+          "avg_cores": 3.389606152210507,
+          "peak_rss_mb": 57.83203125,
+          "rss_before_mb": 41.234375,
+          "phase_ram_mb": 16.59765625,
+          "peak_is_phase_only": true,
+          "runs": 1
+        },
+        "quantize_input": {
+          "status": "ok",
+          "wall_s": 0.0037322279999898456,
+          "cpu_s": 0.015662148999999986,
+          "cpu_user_s": 0.010000000000000009,
+          "cpu_sys_s": 0.0,
+          "avg_cores": 4.224130197845059,
+          "peak_rss_mb": 42.62109375,
+          "rss_before_mb": 41.2109375,
+          "phase_ram_mb": 1.390625,
+          "peak_is_phase_only": true,
+          "input_elements": 3072,
+          "input_scale": 13,
+          "runs": 3
+        },
+        "witness": {
+          "status": "ok",
+          "wall_s": 0.33803725799998574,
+          "cpu_s": 0.9139077449999999,
+          "cpu_user_s": 0.7999999999999999,
+          "cpu_sys_s": 0.1,
+          "avg_cores": 2.70478587041983,
+          "peak_rss_mb": 79.1015625,
+          "rss_before_mb": 41.25,
+          "phase_ram_mb": 37.84765625,
+          "peak_is_phase_only": true,
+          "quantized_input_matches_witness": true,
+          "runs": 3
+        },
+        "srs": {
+          "status": "ok",
+          "wall_s": 5.856458251999811,
+          "cpu_s": 1.001337185,
+          "cpu_user_s": 0.6000000000000001,
+          "cpu_sys_s": 0.39999999999999997,
+          "avg_cores": 0.17097999198714892,
+          "peak_rss_mb": 307.6796875,
+          "rss_before_mb": 41.16015625,
+          "phase_ram_mb": 266.51953125,
+          "peak_is_phase_only": true,
+          "srs_source": "downloaded (ezkl public KZG setup)",
+          "logrows": 20,
+          "runs": 1
+        },
+        "setup": {
+          "status": "ok",
+          "wall_s": 128.7606971099999,
+          "cpu_s": 355.989340122,
+          "cpu_user_s": 296.15,
+          "cpu_sys_s": 59.839999999999996,
+          "avg_cores": 2.7647360422247425,
+          "peak_rss_mb": 12142.453125,
+          "rss_before_mb": 41.25,
+          "phase_ram_mb": 12101.203125,
+          "peak_is_phase_only": true,
+          "pk_mb": 8770.377139091492,
+          "vk_mb": 2.376532554626465,
+          "runs": 1
+        },
+        "prove": {
+          "status": "failed",
+          "error": "killed (SIGKILL), most likely out of memory",
+          "wall_s": 60.08412167899996
+        },
+        "verify": {
+          "status": "skipped",
+          "error": "needs prove"
+        }
+      },
+      "circuit": {
+        "logrows": 20,
+        "num_rows": 617842,
+        "total_assignments": 1235684,
+        "input_scale": 13,
+        "param_scale": 13,
+        "output_scale": 13,
+        "lookups": [],
+        "srs_source": "downloaded (ezkl public KZG setup)",
+        "pk_mb": 8770.377139091492,
+        "vk_mb": 2.376532554626465
+      },
+      "accuracy": {
+        "n_images": 100,
+        "acc_float_pct": 37.0,
+        "acc_ezkl_pct": 37.0,
+        "acc_drop_pp": 0.0,
+        "agreement_pct": 100.0,
+        "changed_predictions": 0,
+        "tied_top_pct": 0.0,
+        "mean_abs_err": 0.0006158042948227376,
+        "max_abs_err": 0.003383636474609375,
+        "rel_err_pct": 0.05669510237417885,
+        "quant_step": 0.0001220703125,
+        "mean_abs_err_in_steps": 5.044668783187866
+      },
+      "summary": {
+        "import ONNX": {
+          "status": "ok",
+          "wall_s": 0.37314731400010714,
+          "cpu_s": 0.9394620410000001,
+          "avg_cores": 2.517670651113759,
+          "peak_rss_mb": 80.19140625,
+          "phase_ram_mb": 38.9765625
+        },
+        "quantize model": {
+          "status": "ok",
+          "wall_s": 43.13705388500057,
+          "cpu_s": 104.43824954499999,
+          "avg_cores": 2.421079794262788,
+          "peak_rss_mb": 188.04296875,
+          "phase_ram_mb": 146.796875
+        },
+        "quantize input": {
+          "status": "ok",
+          "wall_s": 0.0037322279999898456,
+          "cpu_s": 0.015662148999999986,
+          "avg_cores": 4.196460934338042,
+          "peak_rss_mb": 42.62109375,
+          "phase_ram_mb": 1.390625
+        },
+        "generate witness": {
+          "status": "ok",
+          "wall_s": 0.33803725799998574,
+          "cpu_s": 0.9139077449999999,
+          "avg_cores": 2.703571051330793,
+          "peak_rss_mb": 79.1015625,
+          "phase_ram_mb": 37.84765625
+        },
+        "prove": {
+          "status": "failed",
+          "error": "prove: killed (SIGKILL), most likely out of memory"
+        },
+        "verify": {
+          "status": "skipped",
+          "error": "verify: needs prove"
+        },
+        "one-time setup (SRS + keys)": {
+          "status": "ok",
+          "wall_s": 134.61715536199972,
+          "cpu_s": 356.990677307,
+          "avg_cores": 2.651895862358809,
+          "peak_rss_mb": 12142.453125,
+          "phase_ram_mb": 12101.203125
+        }
+      }
+    },
+    "mlp99k": {
+      "params": 98666,
+      "phases": {
+        "import": {
+          "status": "ok",
+          "wall_s": 0.15315065499999037,
+          "cpu_s": 0.38374288199999995,
+          "cpu_user_s": 0.33,
+          "cpu_sys_s": 0.049999999999999996,
+          "avg_cores": 2.505656159289845,
+          "peak_rss_mb": 109.75390625,
+          "rss_before_mb": 41.00390625,
+          "phase_ram_mb": 68.75,
+          "peak_is_phase_only": true,
+          "runs": 1
+        },
+        "calibrate": {
+          "status": "ok",
+          "wall_s": 11.229970978999972,
+          "cpu_s": 20.164814048,
+          "cpu_user_s": 13.99,
+          "cpu_sys_s": 6.170000000000001,
+          "avg_cores": 1.795624769263266,
+          "peak_rss_mb": 215.8203125,
+          "rss_before_mb": 40.98828125,
+          "phase_ram_mb": 174.83203125,
+          "peak_is_phase_only": true,
+          "runs": 1
+        },
+        "compile": {
+          "status": "ok",
+          "wall_s": 0.03972301099975084,
+          "cpu_s": 0.137161776,
+          "cpu_user_s": 0.13,
+          "cpu_sys_s": 0.01,
+          "avg_cores": 3.452955164976299,
+          "peak_rss_mb": 62.453125,
+          "rss_before_mb": 41.0390625,
+          "phase_ram_mb": 21.4140625,
+          "peak_is_phase_only": true,
+          "runs": 1
+        },
+        "quantize_input": {
+          "status": "ok",
+          "wall_s": 0.003466891000243777,
+          "cpu_s": 0.01680318000000003,
+          "cpu_user_s": 0.019999999999999962,
+          "cpu_sys_s": 0.0,
+          "avg_cores": 4.891622493700421,
+          "peak_rss_mb": 42.3203125,
+          "rss_before_mb": 41.09375,
+          "phase_ram_mb": 1.22265625,
+          "peak_is_phase_only": true,
+          "input_elements": 3072,
+          "input_scale": 13,
+          "runs": 3
+        },
+        "witness": {
+          "status": "ok",
+          "wall_s": 0.16179957099984676,
+          "cpu_s": 0.40966825100000004,
+          "cpu_user_s": 0.34,
+          "cpu_sys_s": 0.07,
+          "avg_cores": 2.4834418195112558,
+          "peak_rss_mb": 104.89453125,
+          "rss_before_mb": 41.08984375,
+          "phase_ram_mb": 63.8046875,
+          "peak_is_phase_only": true,
+          "quantized_input_matches_witness": true,
+          "runs": 3
+        },
+        "srs": {
+          "status": "ok",
+          "wall_s": 1.2548435000003337,
+          "cpu_s": 0.34927940599999996,
+          "cpu_user_s": 0.3,
+          "cpu_sys_s": 0.049999999999999996,
+          "avg_cores": 0.2783449936186521,
+          "peak_rss_mb": 82.9609375,
+          "rss_before_mb": 40.984375,
+          "phase_ram_mb": 41.9765625,
+          "peak_is_phase_only": true,
+          "srs_source": "downloaded (ezkl public KZG setup)",
+          "logrows": 17,
+          "runs": 1
+        },
+        "setup": {
+          "status": "ok",
+          "wall_s": 6.763178462000269,
+          "cpu_s": 20.184711521999997,
+          "cpu_user_s": 18.26,
+          "cpu_sys_s": 1.93,
+          "avg_cores": 2.984500798760557,
+          "peak_rss_mb": 896.0078125,
+          "rss_before_mb": 41.12109375,
+          "phase_ram_mb": 854.88671875,
+          "peak_is_phase_only": true,
+          "pk_mb": 528.2517194747925,
+          "vk_mb": 0.25122737884521484,
+          "runs": 1
+        },
+        "prove": {
+          "status": "ok",
+          "wall_s": 8.227860528000292,
+          "cpu_s": 27.580426639000002,
+          "cpu_user_s": 26.02,
+          "cpu_sys_s": 1.51,
+          "avg_cores": 3.351993340469401,
+          "peak_rss_mb": 1341.8984375,
+          "rss_before_mb": 41.12109375,
+          "phase_ram_mb": 1300.79296875,
+          "peak_is_phase_only": true,
+          "proof_kb": 478.8369140625,
+          "runs": 3
+        },
+        "verify": {
+          "status": "ok",
+          "wall_s": 0.11462058199958847,
+          "cpu_s": 0.34500626799999995,
+          "cpu_user_s": 0.29,
+          "cpu_sys_s": 0.04,
+          "avg_cores": 3.0115357641548126,
+          "peak_rss_mb": 134.44921875,
+          "rss_before_mb": 41.06640625,
+          "phase_ram_mb": 93.30859375,
+          "peak_is_phase_only": true,
+          "verified": true,
+          "runs": 3
+        }
+      },
+      "circuit": {
+        "logrows": 17,
+        "num_rows": 66020,
+        "total_assignments": 132040,
+        "input_scale": 13,
+        "param_scale": 13,
+        "output_scale": 13,
+        "lookups": [],
+        "srs_source": "downloaded (ezkl public KZG setup)",
+        "pk_mb": 528.2517194747925,
+        "vk_mb": 0.25122737884521484,
+        "proof_kb": 478.8369140625
+      },
+      "accuracy": {
+        "n_images": 100,
+        "acc_float_pct": 37.0,
+        "acc_ezkl_pct": 37.0,
+        "acc_drop_pp": 0.0,
+        "agreement_pct": 100.0,
+        "changed_predictions": 0,
+        "tied_top_pct": 0.0,
+        "mean_abs_err": 0.0007690934725105762,
+        "max_abs_err": 0.00406956672668457,
+        "rel_err_pct": 0.06299443801663848,
+        "quant_step": 0.0001220703125,
+        "mean_abs_err_in_steps": 6.3004137268066405
+      },
+      "summary": {
+        "import ONNX": {
+          "status": "ok",
+          "wall_s": 0.15315065499999037,
+          "cpu_s": 0.38374288199999995,
+          "avg_cores": 2.505656159289845,
+          "peak_rss_mb": 109.75390625,
+          "phase_ram_mb": 68.75
+        },
+        "quantize model": {
+          "status": "ok",
+          "wall_s": 11.269693989999723,
+          "cpu_s": 20.301975824,
+          "avg_cores": 1.8014664676800598,
+          "peak_rss_mb": 215.8203125,
+          "phase_ram_mb": 174.83203125
+        },
+        "quantize input": {
+          "status": "ok",
+          "wall_s": 0.003466891000243777,
+          "cpu_s": 0.01680318000000003,
+          "avg_cores": 4.846757512370162,
+          "peak_rss_mb": 42.3203125,
+          "phase_ram_mb": 1.22265625
+        },
+        "generate witness": {
+          "status": "ok",
+          "wall_s": 0.16179957099984676,
+          "cpu_s": 0.40966825100000004,
+          "avg_cores": 2.5319489320548816,
+          "peak_rss_mb": 104.89453125,
+          "phase_ram_mb": 63.8046875
+        },
+        "prove": {
+          "status": "ok",
+          "wall_s": 8.227860528000292,
+          "cpu_s": 27.580426639000002,
+          "avg_cores": 3.352077559547935,
+          "peak_rss_mb": 1341.8984375,
+          "phase_ram_mb": 1300.79296875
+        },
+        "verify": {
+          "status": "ok",
+          "wall_s": 0.11462058199958847,
+          "cpu_s": 0.34500626799999995,
+          "avg_cores": 3.009985309629981,
+          "peak_rss_mb": 134.44921875,
+          "phase_ram_mb": 93.30859375
+        },
+        "one-time setup (SRS + keys)": {
+          "status": "ok",
+          "wall_s": 8.018021962000603,
+          "cpu_s": 20.533990927999998,
+          "avg_cores": 2.560979631300049,
+          "peak_rss_mb": 896.0078125,
+          "phase_ram_mb": 854.88671875
+        }
+      }
+    }
+  }
+}

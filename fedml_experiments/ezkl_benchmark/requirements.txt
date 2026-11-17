@@ -1,0 +1,8 @@
+# export_models.py (torch -> ONNX)
+torch>=2.1
+onnx>=1.15
+# bench_ezkl.py (ONNX -> ezkl); tested with ezkl 23.0.5
+ezkl>=23
+onnxruntime>=1.16
+psutil>=5.9
+numpy>=1.24
