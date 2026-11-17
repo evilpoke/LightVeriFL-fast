@@ -51,9 +51,10 @@ RESULTS_DIR=${RESULTS_DIR:-./results}
 
 PROCESS_NUM=`expr $WORKER_NUM + 1`
 
-# log (stdout and stderr) to the container's stdout (docker) or to the file $LOG; fall back to this shell's stdout where that is not possible
-OUT=${LOG:-/proc/1/fd/1}
-if ! (echo -n > $OUT) 2>/dev/null; then OUT=/dev/stdout; fi
+# log (stdout and stderr) to this terminal, or to the file $LOG
+# (in docker, LOG=/proc/1/fd/1 sends it to the container's log); fall back to the terminal if $LOG is not writable
+OUT=${LOG:-/dev/stdout}
+if ! (echo -n > $OUT) 2>/dev/null; then echo "LOG=$LOG is not writable, logging to the terminal"; OUT=/dev/stdout; fi
 echo $PROCESS_NUM > $OUT
 
 ARGS="--model $MODEL \
