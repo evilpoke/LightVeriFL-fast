@@ -48,6 +48,7 @@ from fedml_api.distributed.utils.bench import Bench, fmt_bits, measure, num_bits
 from fedml_core.distributed.communication.local import LocalBus  # noqa: E402
 from fedml_core.distributed.communication.message import Message  # noqa: E402
 from fedml_api.model.linear.lr import LogisticRegression  # noqa: E402
+from fedml_api.model.cv.small_cnn import SMALL_CIFAR10_CNNS  # noqa: E402
 
 p_model = 2 ** 31 - 1      # field of the (quantized) models, default of main_lightveriagg.py
 q_bits = 10                # precision_parameter, default of main_lightveriagg.py
@@ -475,15 +476,17 @@ def make_args(tmp_path, N=4, T=1, rounds=2, L=2, alpha_bits=64, dropout=0.0, **k
 
 
 def run_protocol(args, server_class=LightVeriAggServerManager, client_class=LightVeriAggClientManager,
-                 write_results=False, d_in=6, classes=3, samples=32):
+                 write_results=False, d_in=6, classes=3, samples=32, model=None, x_shape=None):
+    """synthetic data (inputs of shape x_shape, default (d_in,)) and LogisticRegression(d_in, classes) or model"""
     torch.manual_seed(0)
     N = args.client_num_per_round
-    X = torch.randn(N * samples, d_in)
-    y = (X @ torch.randn(d_in, classes)).argmax(1)
+    x_shape = tuple(x_shape or (d_in,))
+    X = torch.randn(N * samples, *x_shape)
+    y = (X.flatten(1) @ torch.randn(int(np.prod(x_shape)), classes)).argmax(1)
     train_local = {i: DataLoader(TensorDataset(X[i * samples:(i + 1) * samples], y[i * samples:(i + 1) * samples]),
                                  batch_size=args.batch_size, shuffle=True) for i in range(N)}
     test_global = DataLoader(TensorDataset(X, y), batch_size=64)
-    model = LogisticRegression(d_in, classes)
+    model = LogisticRegression(d_in, classes) if model is None else model
     return FedML_lightveriagg_single_process(
         torch.device("cpu"), model, N * samples, test_global, test_global, {i: samples for i in range(N)},
         train_local, {i: test_global for i in range(N)}, args,
@@ -537,6 +540,20 @@ def test_protocol_end_to_end(tmp_path):
                  "computation_per_round.png"):
         assert (out / name).exists()
     assert "all verified: True" in (out / "report.txt").read_text()
+
+
+@pytest.mark.parametrize("name", list(SMALL_CIFAR10_CNNS))
+def test_small_cifar10_cnns_run_the_protocol(tmp_path, name):
+    """the CNNs of --model cnn1k ... cnn10k: <= 10,000 parameters, only parameters in the state_dict
+    (no batch-norm buffers), and two verified rounds on CIFAR-10-shaped inputs"""
+    model = SMALL_CIFAR10_CNNS[name](10)
+    n_params = sum(p.numel() for p in model.parameters())
+    assert n_params <= 10000
+    assert sum(v.numel() for v in model.state_dict().values()) == n_params
+    result = run_protocol(make_args(tmp_path, N=3, T=1, rounds=2, L=2, alpha_bits=16), model=model,
+                          x_shape=(3, 32, 32), classes=10, samples=8)
+    assert result["summary"]["all_rounds_verified"]
+    assert result["server"].aggregator.total_dimension == n_params
 
 
 def test_message_sizes(tmp_path):

@@ -32,6 +32,12 @@ bash run_lightsecagg_distributed_pytorch.sh
   `communication.png`, `computation_per_step.png`, `computation_per_round.png`. The stacked
   per-round charts are colour-blind safe: five colours without a red-green pair (stark blue, red,
   orange, light blue, black), each repeated with stripes and dots, so no series relies on colour alone.
+* `MODEL` (CIFAR-10, d = number of parameters): `lr` (logistic regression, 30,730, default) or one of
+  the small CNNs of `fedml_api/model/cv/small_cnn.py` (no batch norm, so the state_dict holds only
+  parameters): `cnn1k` (1,230), `cnn4k` (3,882), `cnn6k` (5,810), `lenet8k` (8,426), `cnn10k` (9,650).
+  E.g. `MODEL=cnn10k bash run_lightsecagg_distributed_pytorch.sh`. With plain SGD at the default
+  `LR=0.001` the CNNs hardly learn; `LR=0.05` works (cnn10k: 23 % -> 29 % test accuracy in 2 rounds).
+  The 10-bit quantization does not cost accuracy.
 * `VERI_BATCH_SIZE` (L), `VERI_ALPHA_BITS` (0 = plain sum as in the LightVeriFL implementation, which
   lets a server shift a forgery between rounds), `VERI_DROPOUT_RATE` (simulated verification dropouts;
   at least T+1 users must survive).

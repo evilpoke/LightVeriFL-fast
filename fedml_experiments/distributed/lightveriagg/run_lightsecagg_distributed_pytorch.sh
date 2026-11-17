@@ -3,12 +3,14 @@
 
 CLIENT_NUM=5
 WORKER_NUM=5
-MODEL=lr
+# CIFAR-10 models (d = number of parameters):
+#   lr (30,730)  cnn1k (1,230)  cnn4k (3,882)  cnn6k (5,810)  lenet8k (8,426)  cnn10k (9,650)
+MODEL=${MODEL:-lr}
 DISTRIBUTION=homo
 ROUND=${ROUND:-100}
 EPOCH=2
 BATCH_SIZE=64
-LR=0.001
+LR=${LR:-0.001}        # plain SGD; the CNNs learn much faster with LR=0.05
 DATASET=cifar10
 DATA_DIR=./../../../data/cifar10
 CLIENT_OPTIMIZER=sgd
