@@ -11,6 +11,7 @@
   and malicious servers that forge the aggregate model or the reconstructed hash
 """
 import argparse
+import csv
 import copy
 import math
 import os
@@ -34,7 +35,7 @@ from fedml_api.distributed.lightveriagg.LightVeriAggServerManager import LightVe
 from fedml_api.distributed.lightveriagg.message_define import MyMessage  # noqa: E402
 from fedml_api.distributed.lightveriagg.mpc_function import compute_aggregate_encoded_mask, mask_encoding, \
     matmul_mod, model_masking, padded_dimension, random_field_array, verification_dropouts  # noqa: E402
-from fedml_api.distributed.lightveriagg.single_process import FedML_lightveriagg_single_process, \
+from fedml_api.distributed.lightveriagg.single_process import FedML_lightveriagg_single_process, PHASES, \
     message_label  # noqa: E402
 from fedml_api.distributed.lightveriagg.utils import finite_aggregate_to_averaged_tensor, finite_to_signed, \
     flatten_finite_model, gen_Lagrange_coeffs, gen_Lagrange_coeffs_lightsecagg, my_q, my_q_inv, \
@@ -540,6 +541,30 @@ def test_protocol_end_to_end(tmp_path):
                  "computation_per_round.png", "convergence.png"):
         assert (out / name).exists()
     assert "all verified: True" in (out / "report.txt").read_text()
+    check_csv_logs(out, result["bench"], args)
+
+
+def check_csv_logs(out, bench, args):
+    """the CSV logs are complete and consistent with the benchmark records"""
+    read = lambda name: list(csv.DictReader(open(out / name, newline="")))  # noqa: E731
+    run = read("run.csv")
+    assert len(run) == 1 and int(run[0]["N"]) == args.client_num_per_round and run[0]["all_verified"] == "1"
+    computation, communication = read("computation.csv"), read("communication.csv")
+    assert len(computation) == len(bench.time) and len(communication) == len(bench.comm)
+    # every timed step and every message type belongs to a phase of the protocol
+    assert {r["phase"] for r in computation + communication} <= set(PHASES) - {"other"}
+    rounds = read("rounds.csv")
+    assert [int(r["round"]) for r in rounds] == list(range(args.comm_round))
+    assert sum(int(r["comm_%s_bits" % ph]) for r in rounds for ph in PHASES) == sum(r["bits"] for r in bench.comm)
+    per_round = bench.per_round_compute()
+    for r in rounds:
+        assert abs(float(r["time_iteration_s"]) - sum(per_round[int(r["round"])].values())) < 1e-9
+        assert abs(float(r["time_protocol_s"]) + float(r["time_training_s"]) + float(r["time_evaluation_s"])
+                   - float(r["time_iteration_s"])) < 1e-9
+        assert r["test_acc"] != ""
+    assert sum(int(r["batch_check"]) for r in rounds) == len({int(r["round"]) for r in computation
+                                                               if r["phase"] == "batch_check"})
+    assert len(read("verification.csv")) == args.client_num_per_round * args.comm_round
 
 
 @pytest.mark.parametrize("name", list(CIFAR10_MODELS))

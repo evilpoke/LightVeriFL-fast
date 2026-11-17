@@ -25,6 +25,7 @@ bash run_lightsecagg_distributed_pytorch.sh
 * `SINGLE_PROCESS=0` (default): one MPI process per party (`mpirun -np WORKER_NUM+1`). As root,
   Open MPI additionally needs `export OMPI_ALLOW_RUN_AS_ROOT=1 OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1`.
   The run ends with FedML's usual `MPI_ABORT ... errorcode 0` after all clients verified the last round.
+  `mpi_host_file` allows 8 processes (`slots=8`), i.e. N <= 7; raise it for more clients.
 * `SINGLE_PROCESS=1`: the server and all clients run in ONE process (single thread, no MPI) with the
   same protocol code; every virtually transmitted object is sized (communication) and every protocol
   step is timed (computation). `RESULTS_DIR` then contains `report.txt` (tables as in the flcourse
@@ -47,9 +48,47 @@ bash run_lightsecagg_distributed_pytorch.sh
 * `VERI_BATCH_SIZE` (L), `VERI_ALPHA_BITS` (0 = plain sum as in the LightVeriFL implementation, which
   lets a server shift a forgery between rounds), `VERI_DROPOUT_RATE` (simulated verification dropouts;
   at least T+1 users must survive).
-* LightSecAgg/LightVeriFL parameters: `--privacy_guarantee` (T, default 2),
-  `--targeted_number_active_clients` (U, set to N), `--prime_number` (p = 2^31-1),
-  `--precision_parameter` (quantization bits, 10).
+* `CLIENT_NUM` (N, default 5), `PRIVACY_GUARANTEE` (T, default 2, T < N), `EPOCH`, `BATCH_SIZE`.
+  Other LightSecAgg/LightVeriFL parameters: `--targeted_number_active_clients` (U, set to N),
+  `--prime_number` (p = 2^31-1), `--precision_parameter` (quantization bits, 10).
+  Every setting written as `X=${X:-...}` in the script can be set from the environment.
+
+### CSV logs and comparing runs over N
+With `SINGLE_PROCESS=1` every run also writes its records as CSV (one header line each) into its
+run folder `RESULTS_DIR/<run>/` (the MPI mode measures nothing, so it writes none):
+
+| file | rows | columns |
+|---|---|---|
+| `run.csv` | 1 | parameters (model, N, T, U, d, L, alpha_bits, dropout, lr, epochs, ...) and results (final_test_acc / loss, all_verified, wall clock, total communication) |
+| `rounds.csv` | 1 per round | test_acc, test_loss, batch_check (0/1), `time_<phase>_s` and `comm_<phase>_bits` per phase, the sums `*_verification_*`, `*_protocol_*`, `time_iteration_s`, `comm_iteration_bits`, upload/download per client |
+| `computation.csv` | 1 per timed step | round, phase, party (server or client rank), step, seconds |
+| `communication.csv` | 1 per message | round, phase, message type, src, dst, bits |
+| `verification.csv` | 1 per client and round | the results of the commitment and batch checks, dropouts |
+
+Phases (from `message_define.py`): `setup` (message 1), `offline` ([A.1] masks: generate, encode,
+exchange), `training` (local training, model update), `upload` ([A.2] hash, El Gamal commitment,
+masking, uploads), `aggregation` ([A.3] mask aggregation, decoding, recovery of y), `commitment_check`
+([V.0]), `batch_check` ([V.1], every L rounds), `evaluation` (server test). Sums: verification =
+commitment_check + batch_check; protocol = offline + upload + aggregation + verification; iteration =
+all phases (time) or all except setup (communication). A time is the critical path: per step the
+slowest party (= clients running concurrently), steps one after another.
+
+Several runs, one after another (each call blocks until its run has finished), then one figure:
+```
+for N in 5 10 20; do
+  for p in 0.1 0.3; do
+    CLIENT_NUM=$N PRIVACY_GUARANTEE=$(( (N-1)/2 )) VERI_DROPOUT_RATE=$p MODEL=lr LR=0.05 ROUND=20 \
+      SINGLE_PROCESS=1 RESULTS_DIR=./results/sweep LOG=./results/log_N${N}_p${p}.txt \
+      bash run_lightsecagg_distributed_pytorch.sh
+  done
+done
+python plot_runs.py results/sweep/* --y time_protocol_s                # total protocol time per iteration
+python plot_runs.py results/sweep/* --y time_verification_s --where dropout=0.3
+python plot_runs.py results/sweep/* --y comm_offline_bits             # communication of one phase
+```
+`plot_runs.py` puts N on the x-axis, averages the `--y` column of `rounds.csv` over the rounds (so the
+batch check is amortized over L rounds) and draws one line per combination of the parameters that
+differ between the runs (model, lr, dropout, L, ...); `--where` selects a single combination.
 
 ### Architecture: one protocol, interchangeable transports
 * protocol layer -- `LightVeriAggServerManager` / `LightVeriAggClientManager`: only message handlers

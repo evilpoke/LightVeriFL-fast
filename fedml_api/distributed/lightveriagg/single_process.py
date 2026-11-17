@@ -13,21 +13,24 @@ While running
 
 Output (``--results_dir``, default ./results): report.txt, metrics.json, bench.json,
 communication.png, computation_per_step.png, computation_per_round.png -- as in the flcourse framework --
-and convergence.png (test loss / accuracy of the global model per round).
+and convergence.png (test loss / accuracy of the global model per round); everything also as CSV:
+run.csv, rounds.csv, computation.csv, communication.csv, verification.csv (see write_csv).
 """
 import copy
+import csv
 import json
 import logging
 import os
 import platform
 import time
+from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
 
 from fedml_core.distributed.communication.local import LocalBus
 from fedml_core.distributed.communication.message import Message
-from fedml_api.distributed.utils.bench import Bench, fmt_bits, fmt_seconds, measure, plot_communication, \
+from fedml_api.distributed.utils.bench import Bench, fmt_bits, fmt_seconds, kind, measure, plot_communication, \
     plot_computation_per_round, plot_computation_per_step, STARK_BLUE, STARK_ORANGE, _pyplot, _save
 
 from .LightVeriAggAggregator import LightVeriAggAggregator
@@ -43,6 +46,55 @@ _MSG_NAMES = {v: k[len("MSG_TYPE_"):] for k, v in vars(MyMessage).items() if k.s
 
 def message_label(msg_type):
     return "%2d %s" % (msg_type, _MSG_NAMES.get(msg_type, "?"))
+
+
+# ---- phases of one FL iteration (protocol of message_define.py) ---------------------------------
+# every timed step and every message belongs to exactly one phase
+PHASES = ("setup",             # message 1: initial model / config (once, not part of an iteration)
+          "offline",           # [A.1] masks z_i, zh_i, zr_i: generate, encode, exchange (messages 2, 3, 12)
+          "training",          # local training and the update of the local model with y / |U_1| (FL work)
+          "upload",            # [A.2] hash h_i, El Gamal commitment c_i, masking; messages 4, 13, 5, 6
+          "aggregation",       # [A.3] U_1, aggregate encoded masks, decode, recover y; messages 7, 8, 9
+          "commitment_check",  # [V.0] verification masks: aggregate, decode, unmask sum h / sum r, check
+                               #       the commitments; messages 10, 11
+          "batch_check",       # [V.1] amortized check of the aggregates (every L rounds), no messages
+          "evaluation",        # server: test of the global model (FL work)
+          "other")             # anything not listed here (normally empty)
+PROTOCOL_PHASES = ("offline", "upload", "aggregation", "commitment_check", "batch_check")
+VERIFICATION_PHASES = ("commitment_check", "batch_check")
+_MESSAGE_PHASE = {
+    MyMessage.MSG_TYPE_S2C_INIT_CONFIG: "setup",
+    MyMessage.MSG_TYPE_C2S_SEND_ENCODED_MASK_TO_SERVER: "offline",
+    MyMessage.MSG_TYPE_C2S_SEND_VERI_ENCODED_MASK_TO_SERVER: "offline",
+    MyMessage.MSG_TYPE_S2C_BOTH_ENCODED_MASK_TO_CLIENT_FWD: "offline",
+    MyMessage.MSG_TYPE_C2S_VERI_COMMITMENT_TO_SERVER: "upload",
+    MyMessage.MSG_TYPE_S2C_VERI_COMMITMENT_TO_CLIENT_FWD: "upload",
+    MyMessage.MSG_TYPE_C2S_VERI_MASKED_HASH_R: "upload",
+    MyMessage.MSG_TYPE_C2S_SEND_MODEL_TO_SERVER: "upload",
+    MyMessage.MSG_TYPE_S2C_SEND_TO_ACTIVE_CLIENT: "aggregation",
+    MyMessage.MSG_TYPE_C2S_SEND_MASK_TO_SERVER: "aggregation",
+    MyMessage.MSG_TYPE_S2C_SYNC_MODEL_TO_CLIENT: "aggregation",
+    MyMessage.MSG_TYPE_C2S_VERI_SEND_MASK_TO_SERVER: "commitment_check",
+    MyMessage.MSG_TYPE_S2C_SYNC_H_R_TO_CLIENT: "commitment_check",
+}
+
+
+def step_phase(label):
+    """phase of a timed step (label of timer())"""
+    if "local training" in label or "update local model" in label:
+        return "training"
+    if "evaluate" in label:
+        return "evaluation"
+    for tag, phase in (("[A.1]", "offline"), ("[A.2]", "upload"), ("[A.3]", "aggregation"),
+                       ("[V.0]", "commitment_check"), ("[V.1]", "batch_check")):
+        if tag in label:
+            return phase
+    return "other"
+
+
+def message_phase(label):
+    """phase of a message (label of message_label())"""
+    return _MESSAGE_PHASE.get(int(label.split()[0]), "other")
 
 
 def party(rank):
@@ -158,6 +210,95 @@ def plot_convergence(metrics, path, title=""):
     return _save(fig, path, title)
 
 
+def _write_csv(path, rows, fieldnames=None):
+    fieldnames = fieldnames or list(dict.fromkeys(k for r in rows for k in r))
+    with open(path, "w", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fieldnames, restval="")
+        writer.writeheader()
+        writer.writerows(rows)
+    return path
+
+
+def write_csv(out, args, bench, summary, server, clients):
+    """CSV logs of one run (every file has one header line):
+
+    run.csv            1 row: the parameters of the run (model, N, T, U, d, L, dropout, lr, ...) and its results
+    rounds.csv         1 row per round: test accuracy / loss of the global model; per phase (PHASES) the time
+                       (time_<phase>_s: per step the slowest party = concurrent clients, steps one after another)
+                       and the communication (comm_<phase>_bits: all messages of the phase); sums:
+                       *_verification_* = commitment_check + batch_check, *_protocol_* = the PROTOCOL_PHASES,
+                       time_iteration_s = all phases, comm_iteration_bits = all phases except setup;
+                       upload/download_per_client_bits (mean over the clients, without setup)
+    computation.csv    every timed step: round, phase, party (server / client rank), step, seconds
+    communication.csv  every message: round, phase, message, src, dst, bits
+    verification.csv   every client and round: the results of the checks
+    """
+    N = int(args.client_num_per_round)
+    d = int(server.aggregator.total_dimension)
+    metrics = {m["round"]: m for m in server.metrics}
+    final = server.metrics[-1] if server.metrics else {}
+    _write_csv(out / "run.csv", [{
+        "run": out.name, "model": args.model, "dataset": args.dataset, "N": N, "T": args.privacy_guarantee,
+        "U": args.targeted_number_active_clients, "d": d, "L": getattr(args, "veri_batch_size", ""),
+        "alpha_bits": getattr(args, "veri_alpha_bits", ""), "dropout": getattr(args, "veri_dropout_rate", ""),
+        "dropout_seed": getattr(args, "veri_dropout_seed", ""), "lr": args.lr, "optimizer": args.client_optimizer,
+        "epochs": args.epochs, "batch_size": args.batch_size, "q_bits": args.precision_parameter,
+        "p": args.prime_number, "rounds": args.comm_round, "rounds_completed": summary["rounds_completed"],
+        "all_verified": int(bool(summary["all_rounds_verified"])), "final_test_acc": final.get("test_acc", ""),
+        "final_test_loss": final.get("test_loss", ""), "wall_clock_s": summary["wall_clock_s"],
+        "messages": summary["messages_delivered"], "total_comm_bits": summary["total_communication_bits"]}])
+
+    # per round and phase: time (critical path) and communication
+    step_parties = defaultdict(lambda: defaultdict(float))
+    for r in bench.time:
+        step_parties[(r["round"], r["label"])][str(r["who"])] += r["seconds"]
+    time_phase = defaultdict(lambda: defaultdict(float))
+    for (rnd, label), parties in step_parties.items():
+        time_phase[rnd][step_phase(label)] += max(parties.values())
+    comm_phase = defaultdict(lambda: defaultdict(int))
+    up, down = defaultdict(int), defaultdict(int)
+    for r in bench.comm:
+        phase = message_phase(r["label"])
+        comm_phase[r["round"]][phase] += r["bits"]
+        if phase != "setup":
+            if kind(r["src"]) == "client":
+                up[r["round"]] += r["bits"]
+            if kind(r["dst"]) == "client":
+                down[r["round"]] += r["bits"]
+    batch_rounds = {rec["round"] for c in clients for rec in c.verification_log if "batch_ok" in rec}
+    rows = []
+    for rnd in sorted({k for k in list(time_phase) + list(comm_phase) + list(metrics) if k is not None}):
+        m = metrics.get(rnd, {})
+        row = {"round": rnd, "test_acc": m.get("test_acc", ""), "test_loss": m.get("test_loss", ""),
+               "batch_check": int(rnd in batch_rounds)}
+        t, c = time_phase[rnd], comm_phase[rnd]
+        for ph in PHASES:
+            row["time_%s_s" % ph] = t.get(ph, 0.0)
+        row["time_verification_s"] = sum(t.get(ph, 0.0) for ph in VERIFICATION_PHASES)
+        row["time_protocol_s"] = sum(t.get(ph, 0.0) for ph in PROTOCOL_PHASES)
+        row["time_iteration_s"] = sum(t.get(ph, 0.0) for ph in PHASES)
+        for ph in PHASES:
+            row["comm_%s_bits" % ph] = c.get(ph, 0)
+        row["comm_verification_bits"] = sum(c.get(ph, 0) for ph in VERIFICATION_PHASES)
+        row["comm_protocol_bits"] = sum(c.get(ph, 0) for ph in PROTOCOL_PHASES)
+        row["comm_iteration_bits"] = sum(c.get(ph, 0) for ph in PHASES if ph != "setup")
+        row["upload_per_client_bits"] = up[rnd] / N
+        row["download_per_client_bits"] = down[rnd] / N
+        rows.append(row)
+    _write_csv(out / "rounds.csv", rows)
+
+    _write_csv(out / "computation.csv", [
+        {"round": r["round"], "phase": step_phase(r["label"]), "party": r["who"], "step": r["label"],
+         "seconds": r["seconds"]} for r in bench.time], ["round", "phase", "party", "step", "seconds"])
+    _write_csv(out / "communication.csv", [
+        {"round": r["round"], "phase": message_phase(r["label"]), "message": r["label"].strip(), "src": r["src"],
+         "dst": r["dst"], "bits": r["bits"]} for r in bench.comm], ["round", "phase", "message", "src", "dst", "bits"])
+    verification = [dict(rec, batch_checked_rounds=" ".join(map(str, rec["batch_checked_rounds"])))
+                    if "batch_checked_rounds" in rec else dict(rec) for c in clients for rec in c.verification_log]
+    _write_csv(out / "verification.csv", sorted(verification, key=lambda r: (r["round"], r["client"])))
+    return ["run.csv", "rounds.csv", "computation.csv", "communication.csv", "verification.csv"]
+
+
 def write_report(args, bench, summary, server, clients):
     up, down = float(getattr(args, "uplink_mbps", 10.0)), float(getattr(args, "downlink_mbps", 50.0))
     N = int(args.client_num_per_round)
@@ -181,6 +322,7 @@ def write_report(args, bench, summary, server, clients):
         json.dump({"summary": summary, "config": vars(args), "global": server.metrics, "verification": verification},
                   fh, indent=1, default=str)
     bench.save(out / "bench.json")
+    csv_files = write_csv(out, args, bench, summary, server, clients)
 
     totals = bench.per_party_totals()
     client_keys = [str(c.rank) for c in clients]
@@ -237,6 +379,7 @@ def write_report(args, bench, summary, server, clients):
         bench.report(up, down),
         "",
         "figures: " + ", ".join(p.name for p in figures if p is not None),
+        "csv:     " + ", ".join(csv_files) + "   (plot several runs over N: python plot_runs.py <run dirs> --y ...)",
     ]
     text = "\n".join(lines)
     (out / "report.txt").write_text(text + "\n")

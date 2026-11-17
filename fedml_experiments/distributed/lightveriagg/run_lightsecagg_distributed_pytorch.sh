@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 
 
-CLIENT_NUM=5
-WORKER_NUM=5
+CLIENT_NUM=${CLIENT_NUM:-5}               # N: number of clients
+WORKER_NUM=${WORKER_NUM:-$CLIENT_NUM}     # clients per round (= N)
+PRIVACY_GUARANTEE=${PRIVACY_GUARANTEE:-2} # T: privacy against T colluding users (T < N; paper: T = (N-1)/2)
 # CIFAR-10 models (d = number of parameters, see fedml_api/model/cv/cifar10_models.py):
 #   cnn6k (5,810)  cnn15k (14,666)  lr (30,730)  lenet5 (62,006)  mlp99k (98,666)
 MODEL=${MODEL:-lr}
 DISTRIBUTION=homo
 ROUND=${ROUND:-100}
-EPOCH=2
-BATCH_SIZE=64
+EPOCH=${EPOCH:-2}
+BATCH_SIZE=${BATCH_SIZE:-64}
 LR=${LR:-0.001}        # plain SGD; LR=0.05 converges much faster for all models
 DATASET=cifar10
 DATA_DIR=./../../../data/cifar10
@@ -24,9 +25,11 @@ VERI_DROPOUT_RATE=${VERI_DROPOUT_RATE:-0.0}     # simulated fraction of users th
 # 1: run the server and all clients in ONE process (single thread, no MPI): the clients run one after
 #    another, nothing competes for the CPU. Benchmarks communication (size of every virtually transmitted
 #    object) and computation (timers). Results (report.txt, bench.json, metrics.json, communication.png,
-#    computation_per_step.png, computation_per_round.png, convergence.png) go to RESULTS_DIR.
-# (ROUND, VERI_*, SINGLE_PROCESS and RESULTS_DIR can be overridden from the environment,
-#  e.g. ROUND=3 SINGLE_PROCESS=1 bash run_lightsecagg_distributed_pytorch.sh)
+#    computation_per_step.png, computation_per_round.png, convergence.png and the CSV logs run.csv,
+#    rounds.csv, computation.csv, communication.csv, verification.csv) go to RESULTS_DIR/<run>/.
+#    Compare runs over N: python plot_runs.py RESULTS_DIR/* --y time_protocol_s
+# (every setting written as X=${X:-...} can be overridden from the environment,
+#  e.g. CLIENT_NUM=10 ROUND=3 SINGLE_PROCESS=1 bash run_lightsecagg_distributed_pytorch.sh)
 SINGLE_PROCESS=${SINGLE_PROCESS:-0}
 RESULTS_DIR=${RESULTS_DIR:-./results}
 
@@ -59,6 +62,7 @@ ARGS="--model $MODEL \
   --partition_method $DISTRIBUTION  \
   --client_num_in_total $CLIENT_NUM \
   --client_num_per_round $WORKER_NUM \
+  --privacy_guarantee $PRIVACY_GUARANTEE \
   --comm_round $ROUND \
   --epochs $EPOCH \
   --client_optimizer $CLIENT_OPTIMIZER \
