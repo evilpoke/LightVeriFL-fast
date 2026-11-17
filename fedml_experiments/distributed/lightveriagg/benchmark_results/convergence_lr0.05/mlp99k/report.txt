@@ -1,0 +1,120 @@
+EXPERIMENT  LightVeriAgg (LightSecAgg + LightVeriFL, El Gamal)  N=5  T=2  U=5  d=98666  L=10
+output      (run: MODEL=mlp99k LR=0.05 ROUND=30 LOG=/dev/stdout SINGLE_PROCESS=1 bash run_lightsecagg_distributed_pytorch.sh; the five runs ran in parallel, so their timings are not benchmark quality)
+machine     x86_64, 4 CPU(s)
+wall clock  43.0 min (sequential simulation of 5 clients)
+
+CONFIG      model=mlp99k dataset=cifar10 rounds=30 epochs=2 batch=64 lr=0.05  p=2147483647 q_bits=10
+            T=2 U=5  veri_batch_size L=10  alpha bits=64  verification dropout rate=0
+
+VERIFICATION  rounds completed 30 / 30, all verified: True
+  commitment checks: 150 ok / 150,  batch checks: 15 ok / 15,  simulated verification dropouts: 0
+
+GLOBAL MODEL (server-side evaluation)
+  round   0  test_acc 0.3689  test_loss 1.7922
+  round   1  test_acc 0.3915  test_loss 1.7260
+  round   2  test_acc 0.4069  test_loss 1.6973
+  round   3  test_acc 0.4130  test_loss 1.6663
+  round   4  test_acc 0.4214  test_loss 1.6536
+  round   5  test_acc 0.4190  test_loss 1.6433
+  round   6  test_acc 0.4311  test_loss 1.6272
+  round   7  test_acc 0.4267  test_loss 1.6234
+  round   8  test_acc 0.4365  test_loss 1.6036
+  round   9  test_acc 0.4347  test_loss 1.6033
+  round  10  test_acc 0.4366  test_loss 1.5977
+  round  11  test_acc 0.4377  test_loss 1.5973
+  round  12  test_acc 0.4394  test_loss 1.5976
+  round  13  test_acc 0.4439  test_loss 1.5751
+  round  14  test_acc 0.4391  test_loss 1.6002
+  round  15  test_acc 0.4470  test_loss 1.5727
+  round  16  test_acc 0.4470  test_loss 1.5769
+  round  17  test_acc 0.4532  test_loss 1.5604
+  round  18  test_acc 0.4502  test_loss 1.5645
+  round  19  test_acc 0.4497  test_loss 1.5562
+  round  20  test_acc 0.4511  test_loss 1.5586
+  round  21  test_acc 0.4495  test_loss 1.5643
+  round  22  test_acc 0.4530  test_loss 1.5564
+  round  23  test_acc 0.4546  test_loss 1.5517
+  round  24  test_acc 0.4529  test_loss 1.5686
+  round  25  test_acc 0.4458  test_loss 1.5794
+  round  26  test_acc 0.4497  test_loss 1.5776
+  round  27  test_acc 0.4542  test_loss 1.5585
+  round  28  test_acc 0.4546  test_loss 1.5560
+  round  29  test_acc 0.4544  test_loss 1.5442
+
+COMPUTATION PER ROUND (slowest party per step, steps one after another; * = batch check V.1)
+  round   0     13.54 s
+  round   1     12.21 s
+  round   2     13.01 s
+  round   3     14.62 s
+  round   4     15.45 s
+  round   5     14.15 s
+  round   6     14.29 s
+  round   7     13.52 s
+  round   8     13.71 s
+  round   9*    81.09 s
+  round  10     13.54 s
+  round  11     14.10 s
+  round  12     13.27 s
+  round  13     13.82 s
+  round  14     12.99 s
+  round  15     14.00 s
+  round  16     13.37 s
+  round  17     13.05 s
+  round  18     13.45 s
+  round  19*    65.70 s
+  round  20      9.97 s
+  round  21     10.16 s
+  round  22     10.52 s
+  round  23     11.54 s
+  round  24     10.65 s
+  round  25     10.48 s
+  round  26     10.37 s
+  round  27     10.29 s
+  round  28     11.89 s
+  round  29*    65.06 s
+
+PER CLIENT (sum over 30 rounds; mean / max over clients)
+  upload    31.60 MB / 31.60 MB   (per round 1.05 MB / 1.05 MB)
+  download  28.45 MB / 28.45 MB   (per round 948.24 kB / 948.24 kB)
+  compute   8.5 min / 8.5 min   (per round 16.93 s / 16.97 s)
+SERVER      compute 15.23 s (per round 507.5 ms)
+
+COMMUNICATION   (total 300.21 MB over 30 round(s))
+label                                    direction       msgs  total     per round  per msg  
+---------------------------------------------------------------------------------------------
+ 1 S2C_INIT_CONFIG                       server->client     5   3.95 MB    3.95 MB  789.36 kB
+ 2 C2S_SEND_ENCODED_MASK_TO_SERVER       client->server   600  78.93 MB    2.63 MB  131.56 kB
+ 3 C2S_SEND_VERI_ENCODED_MASK_TO_SERVER  client->server   600  58.20 kB    1.94 kB       97 B
+ 4 C2S_VERI_COMMITMENT_TO_SERVER         client->server   150  19.20 kB      640 B      128 B
+ 5 C2S_VERI_MASKED_HASH_R                client->server   150  14.40 kB      480 B       96 B
+ 6 C2S_SEND_MODEL_TO_SERVER              client->server   150  59.20 MB    1.97 MB  394.69 kB
+ 7 S2C_SEND_TO_ACTIVE_CLIENT             server->client   150     750 B       25 B        5 B
+ 8 C2S_SEND_MASK_TO_SERVER               client->server   150  19.73 MB  657.78 kB  131.56 kB
+ 9 S2C_SYNC_MODEL_TO_CLIENT              server->client   150  59.20 MB    1.97 MB  394.69 kB
+10 C2S_VERI_SEND_MASK_TO_SERVER          client->server   150  14.70 kB      490 B       98 B
+11 S2C_SYNC_H_R_TO_CLIENT                server->client   150  14.85 kB      495 B       99 B
+12 S2C_BOTH_ENCODED_MASK_TO_CLIENT_FWD   server->client   600  78.99 MB    2.63 MB  131.65 kB
+13 S2C_VERI_COMMITMENT_TO_CLIENT_FWD     server->client   600  77.40 kB    2.58 kB      129 B
+
+COMPUTATION   ('avg/round' = average over parties, 'parallel/round' = max over parties = concurrent clients)
+label                                                                   who     calls  total     per call  avg/round  parallel/round
+------------------------------------------------------------------------------------------------------------------------------------
+client: [A.1] LightSecAgg mask z_i: generate + encode                   client    150    1.29 s    8.6 ms     8.6 ms         12.0 ms
+client: [A.1] verification masks zh_i, zr_i: generate + encode          client    150    2.57 s   17.1 ms    17.1 ms         22.2 ms
+client: [A.2] El Gamal commitment c_i                                   client    150  716.8 ms    4.8 ms     4.8 ms          6.8 ms
+client: [A.2] hash h_i = H(x_i)                                         client    150  13.0 min    5.22 s     5.22 s          5.54 s
+client: [A.2] local training                                            client    150  15.0 min    5.99 s     5.99 s          6.56 s
+client: [A.2] mask h_i and r_i                                          client    150    3.4 ms     22 us      22 us           41 us
+client: [A.2] mask model x_i + z_i                                      client    150  157.0 ms    1.0 ms     1.0 ms          2.5 ms
+client: [A.3] aggregate encoded masks (LightSecAgg)                     client    150  129.5 ms    864 us     864 us          1.0 ms
+client: [V.0] aggregate encoded verification masks                      client    150   19.2 ms    128 us     128 us          164 us
+client: [V.0] verify commitments                                        client    150  669.7 ms    4.5 ms     4.5 ms          5.8 ms
+client: [V.1] batch check h(sum a_l y(l)) == sum a_l h^l                client     15  14.2 min   56.82 s    56.82 s         57.95 s
+client: update local model with y / |U_1|                               client    150  251.6 ms    1.7 ms     1.7 ms          2.2 ms
+server: [A.3] decode aggregate mask, recover y = sum x_i                server     30  424.5 ms   14.2 ms    14.2 ms         14.2 ms
+server: [V.0] decode aggregate verification masks, unmask sum h, sum r  server     30   83.3 ms    2.8 ms     2.8 ms          2.8 ms
+server: evaluate global model                                           server     30   14.72 s  490.6 ms   490.6 ms        490.6 ms
+
+ESTIMATED ROUND LATENCY with concurrent clients (uplink 10 Mbit/s, downlink 50 Mbit/s): compute 18.46 s + communication 994.3 ms = 19.45 s per round
+
+figures: communication.png, computation_per_step.png, computation_per_round.png, convergence.png

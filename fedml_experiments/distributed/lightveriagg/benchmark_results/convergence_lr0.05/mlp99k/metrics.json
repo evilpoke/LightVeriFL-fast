@@ -1,0 +1,1478 @@
+{
+ "summary": {
+  "name": "lightveriagg",
+  "rounds_completed": 30,
+  "rounds_requested": 30,
+  "verification_error": null,
+  "all_rounds_verified": true,
+  "wall_clock_s": 2582.3547640399997,
+  "messages_delivered": 3605,
+  "total_communication_bits": 2401709832,
+  "final": {
+   "round": 29,
+   "test_acc": 0.4544270833333333,
+   "test_loss": 1.5442190040380528
+  },
+  "output_dir": "/tmp/claude-0/-home-user/356980d8-6b97-5aab-9342-a64b93ecc763/scratchpad/conv/mlp99k/lightveriagg_N5_d98666_20261117-170139",
+  "estimated_round_latency": {
+   "compute_s": 18.46029009286654,
+   "comm_s": 0.9942683039999998,
+   "total_s": 19.45455839686654,
+   "rounds": 30,
+   "uplink_mbps": 10.0,
+   "downlink_mbps": 50.0
+  }
+ },
+ "config": {
+  "model": "mlp99k",
+  "dataset": "cifar10",
+  "data_dir": "./../../../data/cifar10",
+  "partition_method": "homo",
+  "partition_alpha": 0.5,
+  "client_num_in_total": 5,
+  "client_num_per_round": 5,
+  "batch_size": 64,
+  "client_optimizer": "sgd",
+  "backend": "SP",
+  "lr": 0.05,
+  "wd": 0.001,
+  "epochs": 2,
+  "comm_round": 30,
+  "is_mobile": 1,
+  "frequency_of_the_test": 1,
+  "gpu_server_num": 1,
+  "gpu_num_per_server": 4,
+  "gpu_mapping_file": "gpu_mapping.yaml",
+  "gpu_mapping_key": "mapping_default",
+  "grpc_ipconfig_path": "grpc_ipconfig.csv",
+  "ci": 0,
+  "targeted_number_active_clients": 5,
+  "privacy_guarantee": 2,
+  "prime_number": 2147483647,
+  "precision_parameter": 10,
+  "veri_batch_size": 10,
+  "veri_alpha_bits": 64,
+  "veri_dropout_rate": 0.0,
+  "veri_dropout_seed": 0,
+  "single_process": 1,
+  "results_dir": "/tmp/claude-0/-home-user/356980d8-6b97-5aab-9342-a64b93ecc763/scratchpad/conv/mlp99k",
+  "bench_name": "lightveriagg",
+  "uplink_mbps": 10.0,
+  "downlink_mbps": 50.0,
+  "round_idx": 29
+ },
+ "global": [
+  {
+   "round": 0,
+   "test_acc": 0.36889022435897434,
+   "test_loss": 1.792227885661981
+  },
+  {
+   "round": 1,
+   "test_acc": 0.3915264423076923,
+   "test_loss": 1.7260397504537532
+  },
+  {
+   "round": 2,
+   "test_acc": 0.40685096153846156,
+   "test_loss": 1.6973268129886725
+  },
+  {
+   "round": 3,
+   "test_acc": 0.41296073717948717,
+   "test_loss": 1.666319951032981
+  },
+  {
+   "round": 4,
+   "test_acc": 0.42137419871794873,
+   "test_loss": 1.653551499048869
+  },
+  {
+   "round": 5,
+   "test_acc": 0.4189703525641026,
+   "test_loss": 1.6432810013110821
+  },
+  {
+   "round": 6,
+   "test_acc": 0.4310897435897436,
+   "test_loss": 1.6272053871399317
+  },
+  {
+   "round": 7,
+   "test_acc": 0.4266826923076923,
+   "test_loss": 1.6234153302816243
+  },
+  {
+   "round": 8,
+   "test_acc": 0.4364983974358974,
+   "test_loss": 1.603643950743553
+  },
+  {
+   "round": 9,
+   "test_acc": 0.43469551282051283,
+   "test_loss": 1.603271342240847
+  },
+  {
+   "round": 10,
+   "test_acc": 0.4365985576923077,
+   "test_loss": 1.5977018888180072
+  },
+  {
+   "round": 11,
+   "test_acc": 0.43770032051282054,
+   "test_loss": 1.5973168878983228
+  },
+  {
+   "round": 12,
+   "test_acc": 0.4394030448717949,
+   "test_loss": 1.5975880026817322
+  },
+  {
+   "round": 13,
+   "test_acc": 0.4439102564102564,
+   "test_loss": 1.575068739744333
+  },
+  {
+   "round": 14,
+   "test_acc": 0.4391025641025641,
+   "test_loss": 1.6001865550493584
+  },
+  {
+   "round": 15,
+   "test_acc": 0.44701522435897434,
+   "test_loss": 1.5726588666439056
+  },
+  {
+   "round": 16,
+   "test_acc": 0.44701522435897434,
+   "test_loss": 1.576905296399043
+  },
+  {
+   "round": 17,
+   "test_acc": 0.45322516025641024,
+   "test_loss": 1.5604475950583434
+  },
+  {
+   "round": 18,
+   "test_acc": 0.4502203525641026,
+   "test_loss": 1.5644941261181464
+  },
+  {
+   "round": 19,
+   "test_acc": 0.44971955128205127,
+   "test_loss": 1.556176142814832
+  },
+  {
+   "round": 20,
+   "test_acc": 0.4511217948717949,
+   "test_loss": 1.5585729342240553
+  },
+  {
+   "round": 21,
+   "test_acc": 0.4495192307692308,
+   "test_loss": 1.5643281111350427
+  },
+  {
+   "round": 22,
+   "test_acc": 0.45302483974358976,
+   "test_loss": 1.5564371232803051
+  },
+  {
+   "round": 23,
+   "test_acc": 0.45462740384615385,
+   "test_loss": 1.5516966099922473
+  },
+  {
+   "round": 24,
+   "test_acc": 0.45292467948717946,
+   "test_loss": 1.5686493095679162
+  },
+  {
+   "round": 25,
+   "test_acc": 0.44581330128205127,
+   "test_loss": 1.579435108563839
+  },
+  {
+   "round": 26,
+   "test_acc": 0.44971955128205127,
+   "test_loss": 1.5775911143192878
+  },
+  {
+   "round": 27,
+   "test_acc": 0.45422676282051283,
+   "test_loss": 1.5584795551422315
+  },
+  {
+   "round": 28,
+   "test_acc": 0.45462740384615385,
+   "test_loss": 1.5560271816375928
+  },
+  {
+   "round": 29,
+   "test_acc": 0.4544270833333333,
+   "test_loss": 1.5442190040380528
+  }
+ ],
+ "verification": [
+  {
+   "round": 0,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 349382,
+   "commitments_ok": true
+  },
+  {
+   "round": 1,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 354169,
+   "commitments_ok": true
+  },
+  {
+   "round": 2,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 358743,
+   "commitments_ok": true
+  },
+  {
+   "round": 3,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 362693,
+   "commitments_ok": true
+  },
+  {
+   "round": 4,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 366677,
+   "commitments_ok": true
+  },
+  {
+   "round": 5,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 370712,
+   "commitments_ok": true
+  },
+  {
+   "round": 6,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 373631,
+   "commitments_ok": true
+  },
+  {
+   "round": 7,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 376888,
+   "commitments_ok": true
+  },
+  {
+   "round": 8,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 379640,
+   "commitments_ok": true
+  },
+  {
+   "round": 9,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 382199,
+   "commitments_ok": true,
+   "batch_scalar_bits": 7081933,
+   "batch_checked_rounds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 10,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 384162,
+   "commitments_ok": true
+  },
+  {
+   "round": 11,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 386439,
+   "commitments_ok": true
+  },
+  {
+   "round": 12,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 388183,
+   "commitments_ok": true
+  },
+  {
+   "round": 13,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 391210,
+   "commitments_ok": true
+  },
+  {
+   "round": 14,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 392167,
+   "commitments_ok": true
+  },
+  {
+   "round": 15,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 393822,
+   "commitments_ok": true
+  },
+  {
+   "round": 16,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 394668,
+   "commitments_ok": true
+  },
+  {
+   "round": 17,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 396605,
+   "commitments_ok": true
+  },
+  {
+   "round": 18,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 397910,
+   "commitments_ok": true
+  },
+  {
+   "round": 19,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 399177,
+   "commitments_ok": true,
+   "batch_scalar_bits": 7162829,
+   "batch_checked_rounds": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 20,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 400446,
+   "commitments_ok": true
+  },
+  {
+   "round": 21,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 401545,
+   "commitments_ok": true
+  },
+  {
+   "round": 22,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 402939,
+   "commitments_ok": true
+  },
+  {
+   "round": 23,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 404019,
+   "commitments_ok": true
+  },
+  {
+   "round": 24,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 404942,
+   "commitments_ok": true
+  },
+  {
+   "round": 25,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 406155,
+   "commitments_ok": true
+  },
+  {
+   "round": 26,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 407404,
+   "commitments_ok": true
+  },
+  {
+   "round": 27,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 407894,
+   "commitments_ok": true
+  },
+  {
+   "round": 28,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 408701,
+   "commitments_ok": true
+  },
+  {
+   "round": 29,
+   "client": 0,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 409819,
+   "commitments_ok": true,
+   "batch_scalar_bits": 7143411,
+   "batch_checked_rounds": [
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 0,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 348909,
+   "commitments_ok": true
+  },
+  {
+   "round": 1,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 353855,
+   "commitments_ok": true
+  },
+  {
+   "round": 2,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 358172,
+   "commitments_ok": true
+  },
+  {
+   "round": 3,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 362825,
+   "commitments_ok": true
+  },
+  {
+   "round": 4,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 366627,
+   "commitments_ok": true
+  },
+  {
+   "round": 5,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 370511,
+   "commitments_ok": true
+  },
+  {
+   "round": 6,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 373917,
+   "commitments_ok": true
+  },
+  {
+   "round": 7,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 376861,
+   "commitments_ok": true
+  },
+  {
+   "round": 8,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 379342,
+   "commitments_ok": true
+  },
+  {
+   "round": 9,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 381568,
+   "commitments_ok": true,
+   "batch_scalar_bits": 7104714,
+   "batch_checked_rounds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 10,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 384284,
+   "commitments_ok": true
+  },
+  {
+   "round": 11,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 386606,
+   "commitments_ok": true
+  },
+  {
+   "round": 12,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 388173,
+   "commitments_ok": true
+  },
+  {
+   "round": 13,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 390459,
+   "commitments_ok": true
+  },
+  {
+   "round": 14,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 391998,
+   "commitments_ok": true
+  },
+  {
+   "round": 15,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 393895,
+   "commitments_ok": true
+  },
+  {
+   "round": 16,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 394968,
+   "commitments_ok": true
+  },
+  {
+   "round": 17,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 397047,
+   "commitments_ok": true
+  },
+  {
+   "round": 18,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 397783,
+   "commitments_ok": true
+  },
+  {
+   "round": 19,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 399009,
+   "commitments_ok": true,
+   "batch_scalar_bits": 7166563,
+   "batch_checked_rounds": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 20,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 400430,
+   "commitments_ok": true
+  },
+  {
+   "round": 21,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 401995,
+   "commitments_ok": true
+  },
+  {
+   "round": 22,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 403093,
+   "commitments_ok": true
+  },
+  {
+   "round": 23,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 403495,
+   "commitments_ok": true
+  },
+  {
+   "round": 24,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 404958,
+   "commitments_ok": true
+  },
+  {
+   "round": 25,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 405901,
+   "commitments_ok": true
+  },
+  {
+   "round": 26,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 406577,
+   "commitments_ok": true
+  },
+  {
+   "round": 27,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 407942,
+   "commitments_ok": true
+  },
+  {
+   "round": 28,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 408511,
+   "commitments_ok": true
+  },
+  {
+   "round": 29,
+   "client": 1,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 409164,
+   "commitments_ok": true,
+   "batch_scalar_bits": 7153183,
+   "batch_checked_rounds": [
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 0,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 349638,
+   "commitments_ok": true
+  },
+  {
+   "round": 1,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 353739,
+   "commitments_ok": true
+  },
+  {
+   "round": 2,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 358071,
+   "commitments_ok": true
+  },
+  {
+   "round": 3,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 362548,
+   "commitments_ok": true
+  },
+  {
+   "round": 4,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 366195,
+   "commitments_ok": true
+  },
+  {
+   "round": 5,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 369982,
+   "commitments_ok": true
+  },
+  {
+   "round": 6,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 373782,
+   "commitments_ok": true
+  },
+  {
+   "round": 7,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 377148,
+   "commitments_ok": true
+  },
+  {
+   "round": 8,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 379572,
+   "commitments_ok": true
+  },
+  {
+   "round": 9,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 382192,
+   "commitments_ok": true,
+   "batch_scalar_bits": 7077719,
+   "batch_checked_rounds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 10,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 384092,
+   "commitments_ok": true
+  },
+  {
+   "round": 11,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 386085,
+   "commitments_ok": true
+  },
+  {
+   "round": 12,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 388484,
+   "commitments_ok": true
+  },
+  {
+   "round": 13,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 390872,
+   "commitments_ok": true
+  },
+  {
+   "round": 14,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 391840,
+   "commitments_ok": true
+  },
+  {
+   "round": 15,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 394312,
+   "commitments_ok": true
+  },
+  {
+   "round": 16,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 395161,
+   "commitments_ok": true
+  },
+  {
+   "round": 17,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 396336,
+   "commitments_ok": true
+  },
+  {
+   "round": 18,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 397815,
+   "commitments_ok": true
+  },
+  {
+   "round": 19,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 399302,
+   "commitments_ok": true,
+   "batch_scalar_bits": 7140378,
+   "batch_checked_rounds": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 20,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 400180,
+   "commitments_ok": true
+  },
+  {
+   "round": 21,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 401525,
+   "commitments_ok": true
+  },
+  {
+   "round": 22,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 402516,
+   "commitments_ok": true
+  },
+  {
+   "round": 23,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 403530,
+   "commitments_ok": true
+  },
+  {
+   "round": 24,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 405152,
+   "commitments_ok": true
+  },
+  {
+   "round": 25,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 405734,
+   "commitments_ok": true
+  },
+  {
+   "round": 26,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 406776,
+   "commitments_ok": true
+  },
+  {
+   "round": 27,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 407831,
+   "commitments_ok": true
+  },
+  {
+   "round": 28,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 409111,
+   "commitments_ok": true
+  },
+  {
+   "round": 29,
+   "client": 2,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 409623,
+   "commitments_ok": true,
+   "batch_scalar_bits": 7057040,
+   "batch_checked_rounds": [
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 0,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 349508,
+   "commitments_ok": true
+  },
+  {
+   "round": 1,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 353864,
+   "commitments_ok": true
+  },
+  {
+   "round": 2,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 358714,
+   "commitments_ok": true
+  },
+  {
+   "round": 3,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 363081,
+   "commitments_ok": true
+  },
+  {
+   "round": 4,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 366948,
+   "commitments_ok": true
+  },
+  {
+   "round": 5,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 370725,
+   "commitments_ok": true
+  },
+  {
+   "round": 6,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 373946,
+   "commitments_ok": true
+  },
+  {
+   "round": 7,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 377484,
+   "commitments_ok": true
+  },
+  {
+   "round": 8,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 380078,
+   "commitments_ok": true
+  },
+  {
+   "round": 9,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 382405,
+   "commitments_ok": true,
+   "batch_scalar_bits": 7151907,
+   "batch_checked_rounds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 10,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 384534,
+   "commitments_ok": true
+  },
+  {
+   "round": 11,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 387088,
+   "commitments_ok": true
+  },
+  {
+   "round": 12,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 389234,
+   "commitments_ok": true
+  },
+  {
+   "round": 13,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 390592,
+   "commitments_ok": true
+  },
+  {
+   "round": 14,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 392050,
+   "commitments_ok": true
+  },
+  {
+   "round": 15,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 393831,
+   "commitments_ok": true
+  },
+  {
+   "round": 16,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 395479,
+   "commitments_ok": true
+  },
+  {
+   "round": 17,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 396779,
+   "commitments_ok": true
+  },
+  {
+   "round": 18,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 397852,
+   "commitments_ok": true
+  },
+  {
+   "round": 19,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 399186,
+   "commitments_ok": true,
+   "batch_scalar_bits": 7179910,
+   "batch_checked_rounds": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 20,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 400324,
+   "commitments_ok": true
+  },
+  {
+   "round": 21,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 401551,
+   "commitments_ok": true
+  },
+  {
+   "round": 22,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 402690,
+   "commitments_ok": true
+  },
+  {
+   "round": 23,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 404010,
+   "commitments_ok": true
+  },
+  {
+   "round": 24,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 404833,
+   "commitments_ok": true
+  },
+  {
+   "round": 25,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 405636,
+   "commitments_ok": true
+  },
+  {
+   "round": 26,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 406779,
+   "commitments_ok": true
+  },
+  {
+   "round": 27,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 407520,
+   "commitments_ok": true
+  },
+  {
+   "round": 28,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 408376,
+   "commitments_ok": true
+  },
+  {
+   "round": 29,
+   "client": 3,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 409536,
+   "commitments_ok": true,
+   "batch_scalar_bits": 7199686,
+   "batch_checked_rounds": [
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 0,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 348618,
+   "commitments_ok": true
+  },
+  {
+   "round": 1,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 353296,
+   "commitments_ok": true
+  },
+  {
+   "round": 2,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 358234,
+   "commitments_ok": true
+  },
+  {
+   "round": 3,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 362450,
+   "commitments_ok": true
+  },
+  {
+   "round": 4,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 367017,
+   "commitments_ok": true
+  },
+  {
+   "round": 5,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 370814,
+   "commitments_ok": true
+  },
+  {
+   "round": 6,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 373739,
+   "commitments_ok": true
+  },
+  {
+   "round": 7,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 376553,
+   "commitments_ok": true
+  },
+  {
+   "round": 8,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 379884,
+   "commitments_ok": true
+  },
+  {
+   "round": 9,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 381981,
+   "commitments_ok": true,
+   "batch_scalar_bits": 7084752,
+   "batch_checked_rounds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 10,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 384704,
+   "commitments_ok": true
+  },
+  {
+   "round": 11,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 386319,
+   "commitments_ok": true
+  },
+  {
+   "round": 12,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 388805,
+   "commitments_ok": true
+  },
+  {
+   "round": 13,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 390553,
+   "commitments_ok": true
+  },
+  {
+   "round": 14,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 392066,
+   "commitments_ok": true
+  },
+  {
+   "round": 15,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 393660,
+   "commitments_ok": true
+  },
+  {
+   "round": 16,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 395151,
+   "commitments_ok": true
+  },
+  {
+   "round": 17,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 396561,
+   "commitments_ok": true
+  },
+  {
+   "round": 18,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 397910,
+   "commitments_ok": true
+  },
+  {
+   "round": 19,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 399221,
+   "commitments_ok": true,
+   "batch_scalar_bits": 7155627,
+   "batch_checked_rounds": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ],
+   "batch_ok": true
+  },
+  {
+   "round": 20,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 400617,
+   "commitments_ok": true
+  },
+  {
+   "round": 21,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 401355,
+   "commitments_ok": true
+  },
+  {
+   "round": 22,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 402740,
+   "commitments_ok": true
+  },
+  {
+   "round": 23,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 403912,
+   "commitments_ok": true
+  },
+  {
+   "round": 24,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 404640,
+   "commitments_ok": true
+  },
+  {
+   "round": 25,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 406013,
+   "commitments_ok": true
+  },
+  {
+   "round": 26,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 406869,
+   "commitments_ok": true
+  },
+  {
+   "round": 27,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 407598,
+   "commitments_ok": true
+  },
+  {
+   "round": 28,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 408390,
+   "commitments_ok": true
+  },
+  {
+   "round": 29,
+   "client": 4,
+   "dropped_in_verification": false,
+   "hash_scalar_bits": 409368,
+   "commitments_ok": true,
+   "batch_scalar_bits": 7152905,
+   "batch_checked_rounds": [
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29
+   ],
+   "batch_ok": true
+  }
+ ]
+}

@@ -43,7 +43,7 @@ from fedml_api.data_preprocessing.cifar100.data_loader import load_partition_dat
 from fedml_api.data_preprocessing.cinic10.data_loader import load_partition_data_cinic10
 
 from fedml_api.model.cv.cnn import CNN_DropOut
-from fedml_api.model.cv.small_cnn import SMALL_CIFAR10_CNNS
+from fedml_api.model.cv.cifar10_models import CIFAR10_MODELS
 from fedml_api.model.cv.resnet_gn import resnet18
 from fedml_api.model.cv.mobilenet import mobilenet
 from fedml_api.model.cv.resnet import resnet56
@@ -391,14 +391,10 @@ def create_model(args, model_name, output_dim):
     if model_name == "lr" and args.dataset == "mnist":
         logging.info("LogisticRegression + MNIST")
         model = LogisticRegression(28 * 28, output_dim)
-    elif model_name == "lr" and args.dataset == "cifar10":
-        logging.info("LogisticRegression + cirar10")
-        # CIFAR-10 images are 3 x 32 x 32: flatten them for the linear model
-        model = torch.nn.Sequential(torch.nn.Flatten(), LogisticRegression(3 * 32 * 32, output_dim))
-    elif model_name in SMALL_CIFAR10_CNNS and args.dataset == "cifar10":
-        # small CNNs with <= 10,000 parameters: cnn1k, cnn4k, cnn6k, lenet8k, cnn10k
+    elif model_name in CIFAR10_MODELS and args.dataset == "cifar10":
+        # cnn6k, cnn15k, lr, lenet5, mlp99k (see fedml_api/model/cv/cifar10_models.py)
         logging.info("%s + cifar10" % model_name)
-        model = SMALL_CIFAR10_CNNS[model_name](output_dim)
+        model = CIFAR10_MODELS[model_name](output_dim)
     elif model_name == "rnn" and args.dataset == "shakespeare":
         logging.info("RNN + shakespeare")
         model = RNN_OriginalFedAvg()
@@ -530,8 +526,8 @@ if __name__ == "__main__":
     # In this case, please use our FedML distributed version (./fedml_experiments/distributed_fedavg)
     model = create_model(args, model_name=args.model, output_dim=dataset[7])
     if model is None:
-        raise ValueError("no model '%s' for the dataset '%s' (cifar10: lr, %s)"
-                         % (args.model, args.dataset, ", ".join(SMALL_CIFAR10_CNNS)))
+        raise ValueError("no model '%s' for the dataset '%s' (cifar10: %s)"
+                         % (args.model, args.dataset, ", ".join(CIFAR10_MODELS)))
     #comm.Barrier()  # barrier is at fault
     if args.client_num_per_round > args.targeted_number_active_clients:
         args.targeted_number_active_clients = args.client_num_per_round

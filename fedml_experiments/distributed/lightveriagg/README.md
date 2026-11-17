@@ -29,15 +29,19 @@ bash run_lightsecagg_distributed_pytorch.sh
   same protocol code; every virtually transmitted object is sized (communication) and every protocol
   step is timed (computation). `RESULTS_DIR` then contains `report.txt` (tables as in the flcourse
   framework, estimated round latency with concurrent clients), `bench.json`, `metrics.json`,
-  `communication.png`, `computation_per_step.png`, `computation_per_round.png`. The stacked
+  `communication.png`, `computation_per_step.png`, `computation_per_round.png`, `convergence.png`
+  (test loss / accuracy of the global model per round). The stacked
   per-round charts are colour-blind safe: five colours without a red-green pair (stark blue, red,
   orange, light blue, black), each repeated with stripes and dots, so no series relies on colour alone.
-* `MODEL` (CIFAR-10, d = number of parameters): `lr` (logistic regression, 30,730, default) or one of
-  the small CNNs of `fedml_api/model/cv/small_cnn.py` (no batch norm, so the state_dict holds only
-  parameters): `cnn1k` (1,230), `cnn4k` (3,882), `cnn6k` (5,810), `lenet8k` (8,426), `cnn10k` (9,650).
-  E.g. `MODEL=cnn10k bash run_lightsecagg_distributed_pytorch.sh`. With plain SGD at the default
-  `LR=0.001` the CNNs hardly learn; `LR=0.05` works (cnn10k: 23 % -> 29 % test accuracy in 2 rounds).
-  The 10-bit quantization does not cost accuracy.
+* `MODEL` (CIFAR-10, d = number of parameters, `fedml_api/model/cv/cifar10_models.py`): `cnn6k`
+  (5,810), `cnn15k` (14,666), `lr` (logistic regression, 30,730, default), `lenet5` (62,006),
+  `mlp99k` (98,666). No batch norm, so the state_dict holds only parameters. E.g.
+  `MODEL=lenet5 LR=0.05 bash run_lightsecagg_distributed_pytorch.sh`. Plain SGD at the default
+  `LR=0.001` is very slow; use `LR=0.05`. Convergence with 5 clients, `LR=0.05`, 2 local epochs,
+  30 rounds (`benchmark_results/convergence_lr0.05/`, all rounds verified), final test accuracy:
+  `cnn6k` 53.9 %, `cnn15k` 57.7 %, `lr` 34.7 %, `lenet5` 61.0 %, `mlp99k` 45.4 %. `lr` and `mlp99k`
+  have plateaued, `lenet5` is flattening (+2.6 points in the last 10 rounds), the two GAP-CNNs still
+  gain ~0.5 points per round. Compare runs with `python compare_convergence.py <run dir> ...`.
 * `VERI_BATCH_SIZE` (L), `VERI_ALPHA_BITS` (0 = plain sum as in the LightVeriFL implementation, which
   lets a server shift a forgery between rounds), `VERI_DROPOUT_RATE` (simulated verification dropouts;
   at least T+1 users must survive).

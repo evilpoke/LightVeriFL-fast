@@ -12,7 +12,8 @@ While running
 * the protocol steps of clients and server are timed with ``timer`` (inside the managers).
 
 Output (``--results_dir``, default ./results): report.txt, metrics.json, bench.json,
-communication.png, computation_per_step.png, computation_per_round.png -- as in the flcourse framework.
+communication.png, computation_per_step.png, computation_per_round.png -- as in the flcourse framework --
+and convergence.png (test loss / accuracy of the global model per round).
 """
 import copy
 import json
@@ -27,7 +28,7 @@ import numpy as np
 from fedml_core.distributed.communication.local import LocalBus
 from fedml_core.distributed.communication.message import Message
 from fedml_api.distributed.utils.bench import Bench, fmt_bits, fmt_seconds, measure, plot_communication, \
-    plot_computation_per_round, plot_computation_per_step
+    plot_computation_per_round, plot_computation_per_step, STARK_BLUE, STARK_ORANGE, _pyplot, _save
 
 from .LightVeriAggAggregator import LightVeriAggAggregator
 from .LightVeriAggClientManager import LightVeriAggClientManager, VerificationError
@@ -134,6 +135,29 @@ def FedML_lightveriagg_single_process(
     return result
 
 
+def plot_convergence(metrics, path, title=""):
+    """test loss and test accuracy of the global model (server-side evaluation on the global test set)
+    per round, in two panels"""
+    if not metrics:
+        return None
+    plt = _pyplot()
+    from matplotlib.ticker import MaxNLocator
+
+    rounds = [m["round"] for m in metrics]
+    fig, (ax_loss, ax_acc) = plt.subplots(1, 2, figsize=(12, 4.2))
+    ax_loss.plot(rounds, [m["test_loss"] for m in metrics], color=STARK_ORANGE, lw=2, marker="o", ms=4)
+    ax_loss.set_title("test loss (global test set)")
+    ax_loss.set_ylabel("cross-entropy")
+    ax_acc.plot(rounds, [100.0 * m["test_acc"] for m in metrics], color=STARK_BLUE, lw=2, marker="o", ms=4)
+    ax_acc.set_title("test accuracy (global test set), final %.1f %%" % (100.0 * metrics[-1]["test_acc"]))
+    ax_acc.set_ylabel("accuracy [%]")
+    for ax in (ax_loss, ax_acc):
+        ax.set_xlabel("round")
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.grid(alpha=0.3)
+    return _save(fig, path, title)
+
+
 def write_report(args, bench, summary, server, clients):
     up, down = float(getattr(args, "uplink_mbps", 10.0)), float(getattr(args, "downlink_mbps", 50.0))
     N = int(args.client_num_per_round)
@@ -146,7 +170,9 @@ def write_report(args, bench, summary, server, clients):
         N, args.privacy_guarantee, args.targeted_number_active_clients, d, getattr(args, "veri_batch_size", 0))
     figures = [plot_communication(bench, out / "communication.png", title),
                plot_computation_per_step(bench, out / "computation_per_step.png", title),
-               plot_computation_per_round(bench, out / "computation_per_round.png", title)]
+               plot_computation_per_round(bench, out / "computation_per_round.png", title),
+               plot_convergence(server.metrics, out / "convergence.png", "%s  model=%s  lr=%g" % (
+                   title, args.model, args.lr))]
     latency = bench.latency_estimate(up, down)
     summary = dict(summary, output_dir=str(out), estimated_round_latency=latency)
 

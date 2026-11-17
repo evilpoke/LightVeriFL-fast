@@ -48,7 +48,7 @@ from fedml_api.distributed.utils.bench import Bench, fmt_bits, measure, num_bits
 from fedml_core.distributed.communication.local import LocalBus  # noqa: E402
 from fedml_core.distributed.communication.message import Message  # noqa: E402
 from fedml_api.model.linear.lr import LogisticRegression  # noqa: E402
-from fedml_api.model.cv.small_cnn import SMALL_CIFAR10_CNNS  # noqa: E402
+from fedml_api.model.cv.cifar10_models import CIFAR10_MODELS  # noqa: E402
 
 p_model = 2 ** 31 - 1      # field of the (quantized) models, default of main_lightveriagg.py
 q_bits = 10                # precision_parameter, default of main_lightveriagg.py
@@ -537,20 +537,20 @@ def test_protocol_end_to_end(tmp_path):
     # benchmark output
     out = result["output_dir"]
     for name in ("report.txt", "metrics.json", "bench.json", "communication.png", "computation_per_step.png",
-                 "computation_per_round.png"):
+                 "computation_per_round.png", "convergence.png"):
         assert (out / name).exists()
     assert "all verified: True" in (out / "report.txt").read_text()
 
 
-@pytest.mark.parametrize("name", list(SMALL_CIFAR10_CNNS))
-def test_small_cifar10_cnns_run_the_protocol(tmp_path, name):
-    """the CNNs of --model cnn1k ... cnn10k: <= 10,000 parameters, only parameters in the state_dict
-    (no batch-norm buffers), and two verified rounds on CIFAR-10-shaped inputs"""
-    model = SMALL_CIFAR10_CNNS[name](10)
+@pytest.mark.parametrize("name", list(CIFAR10_MODELS))
+def test_cifar10_models_run_the_protocol(tmp_path, name):
+    """the models of --model (cnn6k, cnn15k, lr, lenet5, mlp99k): 5k - 100k parameters, only parameters
+    in the state_dict (no batch-norm buffers), two verified rounds on CIFAR-10-shaped inputs"""
+    model = CIFAR10_MODELS[name](10)
     n_params = sum(p.numel() for p in model.parameters())
-    assert n_params <= 10000
+    assert 5000 <= n_params <= 100000
     assert sum(v.numel() for v in model.state_dict().values()) == n_params
-    result = run_protocol(make_args(tmp_path, N=3, T=1, rounds=2, L=2, alpha_bits=16), model=model,
+    result = run_protocol(make_args(tmp_path, N=3, T=1, rounds=2, L=2, alpha_bits=0), model=model,
                           x_shape=(3, 32, 32), classes=10, samples=8)
     assert result["summary"]["all_rounds_verified"]
     assert result["server"].aggregator.total_dimension == n_params

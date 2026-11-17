@@ -3,14 +3,14 @@
 
 CLIENT_NUM=5
 WORKER_NUM=5
-# CIFAR-10 models (d = number of parameters):
-#   lr (30,730)  cnn1k (1,230)  cnn4k (3,882)  cnn6k (5,810)  lenet8k (8,426)  cnn10k (9,650)
+# CIFAR-10 models (d = number of parameters, see fedml_api/model/cv/cifar10_models.py):
+#   cnn6k (5,810)  cnn15k (14,666)  lr (30,730)  lenet5 (62,006)  mlp99k (98,666)
 MODEL=${MODEL:-lr}
 DISTRIBUTION=homo
 ROUND=${ROUND:-100}
 EPOCH=2
 BATCH_SIZE=64
-LR=${LR:-0.001}        # plain SGD; the CNNs learn much faster with LR=0.05
+LR=${LR:-0.001}        # plain SGD; LR=0.05 converges much faster for all models
 DATASET=cifar10
 DATA_DIR=./../../../data/cifar10
 CLIENT_OPTIMIZER=sgd
@@ -24,7 +24,7 @@ VERI_DROPOUT_RATE=${VERI_DROPOUT_RATE:-0.0}     # simulated fraction of users th
 # 1: run the server and all clients in ONE process (single thread, no MPI): the clients run one after
 #    another, nothing competes for the CPU. Benchmarks communication (size of every virtually transmitted
 #    object) and computation (timers). Results (report.txt, bench.json, metrics.json, communication.png,
-#    computation_per_step.png, computation_per_round.png) go to RESULTS_DIR.
+#    computation_per_step.png, computation_per_round.png, convergence.png) go to RESULTS_DIR.
 # (ROUND, VERI_*, SINGLE_PROCESS and RESULTS_DIR can be overridden from the environment,
 #  e.g. ROUND=3 SINGLE_PROCESS=1 bash run_lightsecagg_distributed_pytorch.sh)
 SINGLE_PROCESS=${SINGLE_PROCESS:-0}
