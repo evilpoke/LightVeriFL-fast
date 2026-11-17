@@ -12,7 +12,7 @@ While running
 * the protocol steps of clients and server are timed with ``timer`` (inside the managers).
 
 Output (``--results_dir``, default ./results): report.txt, metrics.json, bench.json,
-communication.png, computation.png -- as in the flcourse framework.
+communication.png, computation_per_step.png, computation_per_round.png -- as in the flcourse framework.
 """
 import copy
 import json
@@ -27,7 +27,7 @@ import numpy as np
 from fedml_core.distributed.communication.local import LocalBus
 from fedml_core.distributed.communication.message import Message
 from fedml_api.distributed.utils.bench import Bench, fmt_bits, fmt_seconds, measure, plot_communication, \
-    plot_computation
+    plot_computation_per_round, plot_computation_per_step
 
 from .LightVeriAggAggregator import LightVeriAggAggregator
 from .LightVeriAggClientManager import LightVeriAggClientManager, VerificationError
@@ -145,7 +145,8 @@ def write_report(args, bench, summary, server, clients):
     title = "LightVeriAgg (LightSecAgg + LightVeriFL, El Gamal)  N=%d  T=%d  U=%d  d=%d  L=%d" % (
         N, args.privacy_guarantee, args.targeted_number_active_clients, d, getattr(args, "veri_batch_size", 0))
     figures = [plot_communication(bench, out / "communication.png", title),
-               plot_computation(bench, out / "computation.png", title)]
+               plot_computation_per_step(bench, out / "computation_per_step.png", title),
+               plot_computation_per_round(bench, out / "computation_per_round.png", title)]
     latency = bench.latency_estimate(up, down)
     summary = dict(summary, output_dir=str(out), estimated_round_latency=latency)
 

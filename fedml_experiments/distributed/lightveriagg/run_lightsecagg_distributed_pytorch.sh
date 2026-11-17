@@ -22,7 +22,7 @@ VERI_DROPOUT_RATE=${VERI_DROPOUT_RATE:-0.0}     # simulated fraction of users th
 # 1: run the server and all clients in ONE process (single thread, no MPI): the clients run one after
 #    another, nothing competes for the CPU. Benchmarks communication (size of every virtually transmitted
 #    object) and computation (timers). Results (report.txt, bench.json, metrics.json, communication.png,
-#    computation.png) go to RESULTS_DIR.
+#    computation_per_step.png, computation_per_round.png) go to RESULTS_DIR.
 # (ROUND, VERI_*, SINGLE_PROCESS and RESULTS_DIR can be overridden from the environment,
 #  e.g. ROUND=3 SINGLE_PROCESS=1 bash run_lightsecagg_distributed_pytorch.sh)
 SINGLE_PROCESS=${SINGLE_PROCESS:-0}

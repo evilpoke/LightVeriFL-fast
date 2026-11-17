@@ -29,7 +29,9 @@ bash run_lightsecagg_distributed_pytorch.sh
   same protocol code; every virtually transmitted object is sized (communication) and every protocol
   step is timed (computation). `RESULTS_DIR` then contains `report.txt` (tables as in the flcourse
   framework, estimated round latency with concurrent clients), `bench.json`, `metrics.json`,
-  `communication.png`, `computation.png`.
+  `communication.png`, `computation_per_step.png`, `computation_per_round.png`. The stacked
+  per-round charts are colour-blind safe: five colours without a red-green pair (stark blue, red,
+  orange, light blue, black), each repeated with stripes and dots, so no series relies on colour alone.
 * `VERI_BATCH_SIZE` (L), `VERI_ALPHA_BITS` (0 = plain sum as in the LightVeriFL implementation, which
   lets a server shift a forgery between rounds), `VERI_DROPOUT_RATE` (simulated verification dropouts;
   at least T+1 users must survive).
@@ -57,8 +59,8 @@ bash run_benchmarks.sh full     # as in benchmark_results/report.md, ~2 h
 ```
 Everything runs single-process (clients one after another, one torch/BLAS thread) and the runs one
 after another. Output in `results/benchmarks_<date>/`: (1) the setup of the run script (LR on CIFAR-10,
-5 clients, many more rounds than L) with `report.txt`, `communication.png`, `computation.png` (right
-panel: computation per round -- the amortized batch check makes every L-th round expensive, the other
+5 clients, many more rounds than L) with `report.txt`, `communication.png`, `computation_per_step.png`,
+`computation_per_round.png` (the amortized batch check makes every L-th round expensive, the other
 rounds of a batch are cheap); (2) the comparison with LightVeriFL + SecAgg with `report.md`,
 `scaling_N.png`, `scaling_d.png`. Example: `benchmark_results/lightveriagg_cifar10_100rounds_L10/`
 (100 rounds, L = 10: ~6-9 s per round, 21-24.5 s in the rounds 9, 19, ..., 99 with the batch check,

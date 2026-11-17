@@ -10,8 +10,8 @@
 #
 # Output: results/benchmarks_<date>/
 #   1_lightveriagg_cifar10/<run>/   the setup of run_lightsecagg_distributed_pytorch.sh (LR on CIFAR-10, 5 clients),
-#                                   many rounds >> L: report.txt, communication.png, computation.png (incl.
-#                                   computation per round: the batch check every L rounds is a spike, the
+#                                   many rounds >> L: report.txt, communication.png, computation_per_step.png,
+#                                   computation_per_round.png (the batch check every L rounds is a spike, the
 #                                   other rounds of the batch are cheap), bench.json, metrics.json
 #   2_vs_lightverifl_secagg/        LightVeriAgg vs. LightVeriFL + SecAgg as in the LightVeriFL paper:
 #                                   report.md, scaling_N.png, scaling_d.png, results_*.csv (+ every run in runs/)

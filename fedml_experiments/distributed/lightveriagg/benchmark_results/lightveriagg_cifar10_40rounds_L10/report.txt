@@ -137,4 +137,4 @@ server: evaluate global model                                           server  
 
 ESTIMATED ROUND LATENCY with concurrent clients (uplink 10 Mbit/s, downlink 50 Mbit/s): compute 8.92 s + communication 309.9 ms = 9.23 s per round
 
-figures: communication.png, computation.png
+figures: communication.png, computation_per_step.png, computation_per_round.png

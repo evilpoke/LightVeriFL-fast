@@ -389,19 +389,76 @@ def _json_default(o):
 # ----------------------------------------------------------------------------------
 # figures (matplotlib, PNG)
 # ----------------------------------------------------------------------------------
+# colour-blind safe series styles: five strong colours without a red-green pair (every pair stays
+# apart under protan/deutan/tritan simulation, worst: red/orange OKLab Delta E 19.5 for deutans),
+# repeated with patterns, so that no series is told apart by its colour alone.
+STARK_BLUE, STARK_RED, STARK_ORANGE, LIGHT_BLUE, BLACK = "#0050E6", "#D80000", "#FF8C00", "#8CCBFF", "#000000"
+SERIES_COLORS = (STARK_BLUE, STARK_RED, STARK_ORANGE, LIGHT_BLUE, BLACK)
+SERIES_HATCHES = ("", "///", "...", "\\\\\\", "xxx", "---")
+
+
+def _pyplot():
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    return plt
+
+
+def series_style(i: int) -> dict:
+    """Bar style of the i-th series (series in a fixed order, e.g. by label): colour i mod 5 and
+    pattern i div 5 (solid, stripes, dots, ...); the pattern is white on the dark colours and black
+    on orange / light blue."""
+    import inspect
+    import matplotlib.patches
+
+    color = SERIES_COLORS[i % len(SERIES_COLORS)]
+    hatch = SERIES_HATCHES[(i // len(SERIES_COLORS)) % len(SERIES_HATCHES)]
+    hatch_color = BLACK if color in (STARK_ORANGE, LIGHT_BLUE) else "white"
+    style = {"facecolor": color, "hatch": hatch or None, "linewidth": 0}
+    if "hatchcolor" in inspect.signature(matplotlib.patches.Patch.__init__).parameters:
+        style["hatchcolor"] = hatch_color
+    else:  # matplotlib < 3.10 draws the pattern in the edge colour
+        style["edgecolor"] = hatch_color
+    return style
+
+
+def _stacked_bars(ax, rounds, series, width=0.85):
+    """series: [(label, values per round)] in a fixed order, stacked bottom-up; returns the totals"""
+    bottom = np.zeros(len(rounds))
+    for i, (label, v) in enumerate(series):
+        ax.bar(rounds, v, bottom=bottom, label=label, width=width, **series_style(i))
+        bottom += v
+    return bottom
+
+
+def _legend_right(ax):
+    ax.legend(fontsize=7.5, ncol=1, loc="upper left", bbox_to_anchor=(1.01, 1.0), handlelength=2.6,
+              handleheight=1.6, frameon=False)
+
+
+def _save(fig, path, title: str) -> Path:
+    import matplotlib.pyplot as plt
+
+    if title:
+        fig.suptitle(title, fontsize=11)
+    path = Path(path)
+    fig.tight_layout()
+    fig.savefig(path, dpi=130)
+    plt.close(fig)
+    return path
+
+
 def plot_communication(bench: Bench, path, title: str = "") -> Optional[Path]:
     """Total bytes per message type (left) and bytes per round stacked by message type (right)."""
     rows = bench.comm_summary()
     if not rows:
         return None
-    import matplotlib
-
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
+    plt = _pyplot()
     from matplotlib.ticker import MaxNLocator
 
     fig, axes = plt.subplots(1, 2, figsize=(15, max(3.2, 0.42 * len(rows) + 1.5)))
-    colors = {"client->server": "#4C78A8", "server->client": "#F58518", "server->server": "#999999"}
+    colors = {"client->server": STARK_BLUE, "server->client": STARK_ORANGE, "server->server": "#999999"}
     labels = [f"{r['label']}  [{r['direction']}]" for r in rows]
     vals = [r["bits"] / 8 for r in rows]
     ax = axes[0]
@@ -424,45 +481,28 @@ def plot_communication(bench: Bench, path, title: str = "") -> Optional[Path]:
     for rec in bench.comm:
         per[rec["label"]][rec["round"]] += rec["bits"] / 8 / 1e6
     rounds = sorted({rec["round"] for rec in bench.comm})
-    bottom = np.zeros(len(rounds))
-    cmap = plt.get_cmap("tab20")
-    for i, (label, d) in enumerate(sorted(per.items())):
-        v = np.array([d.get(rd, 0.0) for rd in rounds])
-        ax.bar(rounds, v, bottom=bottom, label=label, color=cmap(i % 20))
-        bottom += v
+    _stacked_bars(ax, rounds, [(label, np.array([d.get(rd, 0.0) for rd in rounds])) for label, d in sorted(per.items())])
     ax.set_xlabel("round")
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax.set_ylabel("MB")
     ax.set_title("communication per round")
-    ax.legend(fontsize=7, ncol=1, loc="upper left", bbox_to_anchor=(1.0, 1.0))
+    _legend_right(ax)
     ax.grid(alpha=0.3, axis="y")
-    if title:
-        fig.suptitle(title, fontsize=11)
-    path = Path(path)
-    fig.tight_layout()
-    fig.savefig(path, dpi=130)
-    plt.close(fig)
-    return path
+    ax.set_axisbelow(True)
+    return _save(fig, path, title)
 
 
-def plot_computation(bench: Bench, path, title: str = "") -> Optional[Path]:
-    """Left: seconds per round and step, average over parties vs. max over parties (= concurrent clients).
-    Right: computation per round, stacked by step (slowest party per step = concurrent clients)."""
+def plot_computation_per_step(bench: Bench, path, title: str = "") -> Optional[Path]:
+    """Seconds per round and step: average over parties vs. max over parties (= concurrent clients)."""
     rows = bench.time_summary()
     if not rows:
         return None
-    import matplotlib
-
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-    from matplotlib.ticker import MaxNLocator
-
-    fig, (ax, ax2) = plt.subplots(1, 2, figsize=(19, max(3.6, 0.45 * len(rows) + 1.5)),
-                                  gridspec_kw={"width_ratios": [1.0, 1.15]})
+    plt = _pyplot()
+    fig, ax = plt.subplots(figsize=(11, max(3.6, 0.45 * len(rows) + 1.5)))
     y = np.arange(len(rows))
-    ax.barh(y - 0.2, [max(r["avg_per_round_s"], 1e-7) for r in rows], height=0.4, color="#BAB0AC",
+    ax.barh(y - 0.2, [max(r["avg_per_round_s"], 1e-7) for r in rows], height=0.4, color=LIGHT_BLUE,
             label="average over parties")
-    ax.barh(y + 0.2, [max(r["parallel_per_round_s"], 1e-7) for r in rows], height=0.4, color="#4C78A8",
+    ax.barh(y + 0.2, [max(r["parallel_per_round_s"], 1e-7) for r in rows], height=0.4, color=STARK_BLUE,
             label="max over parties (concurrent clients)")
     ax.set_yticks(y, [f"{r['label']} [{r['who']}]" for r in rows], fontsize=8)
     ax.invert_yaxis()
@@ -471,30 +511,34 @@ def plot_computation(bench: Bench, path, title: str = "") -> Optional[Path]:
     ax.set_title("computation time per step (mean over rounds)")
     ax.legend(fontsize=8)
     ax.grid(alpha=0.3, axis="x")
+    ax.set_axisbelow(True)
+    return _save(fig, path, title)
 
-    # per round, stacked by step
+
+def plot_computation_per_round(bench: Bench, path, title: str = "") -> Optional[Path]:
+    """Computation per round, stacked by step (slowest party per step = concurrent clients, steps one
+    after another), with the mean per round."""
     per_round = bench.per_round_compute()
+    if not per_round:
+        return None
+    plt = _pyplot()
+    import matplotlib.patheffects as pe
+    from matplotlib.ticker import MaxNLocator
+
+    labels = [r["label"] for r in bench.time_summary()]  # the order of the per-step figure
     rounds = list(per_round)
-    labels = [r["label"] for r in rows]
-    bottom = np.zeros(len(rounds))
-    cmap = plt.get_cmap("tab20")
-    for i, label in enumerate(labels):
-        v = np.array([per_round[rd].get(label, 0.0) for rd in rounds])
-        ax2.bar(rounds, v, bottom=bottom, label=label, color=cmap(i % 20), width=0.85)
-        bottom += v
+    fig, ax = plt.subplots(figsize=(15, max(5.0, 0.3 * len(labels) + 1.5)))
+    totals = _stacked_bars(ax, rounds, [(label, np.array([per_round[rd].get(label, 0.0) for rd in rounds]))
+                                        for label in labels])
     if len(rounds) > 1:
-        ax2.axhline(float(np.mean(bottom)), color="black", ls="--", lw=1,
-                    label="mean per round (%.2f s)" % float(np.mean(bottom)))
-    ax2.set_xlabel("round")
-    ax2.xaxis.set_major_locator(MaxNLocator(integer=True))
-    ax2.set_ylabel("seconds")
-    ax2.set_title("computation per round (slowest party per step, steps one after another)")
-    ax2.legend(fontsize=7, ncol=1, loc="upper left", bbox_to_anchor=(1.0, 1.0))
-    ax2.grid(alpha=0.3, axis="y")
-    if title:
-        fig.suptitle(title, fontsize=11)
-    path = Path(path)
-    fig.tight_layout()
-    fig.savefig(path, dpi=130)
-    plt.close(fig)
-    return path
+        mean = float(np.mean(totals))
+        ax.axhline(mean, color=BLACK, ls="--", lw=1.4, label="mean per round (%.2f s)" % mean,
+                   path_effects=[pe.Stroke(linewidth=3.5, foreground="white"), pe.Normal()])
+    ax.set_xlabel("round")
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.set_ylabel("seconds")
+    ax.set_title("computation per round (slowest party per step, steps one after another)")
+    _legend_right(ax)
+    ax.grid(alpha=0.3, axis="y")
+    ax.set_axisbelow(True)
+    return _save(fig, path, title)

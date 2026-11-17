@@ -533,7 +533,8 @@ def test_protocol_end_to_end(tmp_path):
     assert {r["round"] for r in result["bench"].comm} == {0, 1, 2}
     # benchmark output
     out = result["output_dir"]
-    for name in ("report.txt", "metrics.json", "bench.json", "communication.png", "computation.png"):
+    for name in ("report.txt", "metrics.json", "bench.json", "communication.png", "computation_per_step.png",
+                 "computation_per_round.png"):
         assert (out / name).exists()
     assert "all verified: True" in (out / "report.txt").read_text()
 
