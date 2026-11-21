@@ -1,0 +1,14 @@
+# Shared by server.py, client.py, user.py. Paths are relative to this file.
+
+model: mlp99k            # one of the five models of fedml_api/model/cv/cifar10_models.py
+
+# fixed:         the quantized weights are fixed columns of the circuit; the verification key commits to
+#                them, so the signed key pins the weights. mlp99k: 2^17 rows, ~10 s and ~1.5 GB per proof.
+# hashed/public: every proof also outputs the Poseidon hash of the quantized weights. Costs ~41 circuit rows
+#                per weight: 2^21 rows or more for all five models (tens of GB of RAM to prove).
+param_visibility: fixed
+
+model_dir: model         # <model>/network.onnx + dataset.npz (calibration and test images): the SAME files for everyone
+keys_dir: keys           # public_keys.yaml (everyone), private_keys.yaml (clients only)
+work_dir: work           # every party builds its own circuit in work/<party>/
+server_url: http://127.0.0.1:5050   # not 5000: macOS uses it for AirPlay
